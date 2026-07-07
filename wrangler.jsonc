@@ -6,7 +6,7 @@
 //   4. set SELF_URL below to your worker URL after the first deploy
 // Full steps in README.md.
 {
-  "name": "the-other-half",
+  "name": "tentacion-mash",
   "main": "worker/index.js",
   "compatibility_date": "2026-07-07",
   "assets": {
