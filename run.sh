@@ -19,8 +19,10 @@ PORT="${PORT:-8000}"
 PY="$PWD/.venv/bin/python"
 
 serve() {
+  cd app
+  [ -d node_modules ] || npm install
   echo "→ http://localhost:$PORT"
-  cd site && exec "$PY" -m http.server "$PORT"
+  exec npm run dev -- --port "$PORT"
 }
 
 case "${1:-once}" in

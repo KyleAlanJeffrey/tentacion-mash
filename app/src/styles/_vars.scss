@@ -1,0 +1,21 @@
+// palette
+$ink: #0b0a09;
+$bone: #e8e2d6;
+$bone-dim: #9a927f;
+$blood: #a41f1f;
+$hair: #2a2723;
+$ghost: #b9cbd8;
+
+// type
+$blackletter: "UnifrakturMaguntia", serif;
+$serif: "Cormorant Garamond", serif;
+$mono: "IBM Plex Mono", monospace;
+
+$ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+@mixin mono-label($size: 0.68rem, $tracking: 0.35em) {
+  font-family: $mono;
+  font-size: $size;
+  letter-spacing: $tracking;
+  text-transform: uppercase;
+}

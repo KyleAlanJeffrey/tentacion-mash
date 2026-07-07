@@ -11,7 +11,7 @@
   "main": "worker/index.js",
   "compatibility_date": "2026-07-07",
   "assets": {
-    "directory": "./site",
+    "directory": "./app/dist",
     "binding": "ASSETS",
   },
   "d1_databases": [

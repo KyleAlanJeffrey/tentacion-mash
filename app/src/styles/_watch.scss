@@ -1,0 +1,96 @@
+@use "vars" as *;
+
+// the watchlist — ghosts of the not-yet-dead
+#watch {
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12vh 20px 10vh;
+  position: relative;
+
+  h2 {
+    font-family: $blackletter;
+    font-weight: 400;
+    font-size: clamp(1.6rem, 4.5vw, 2.6rem);
+    color: $ghost;
+    text-shadow: 0 0 26px rgba($ghost, 0.45);
+  }
+
+  .sub {
+    margin-top: 1.2vh;
+    @include mono-label(0.64rem, 0.4em);
+    color: $bone-dim;
+  }
+
+  .descend {
+    position: absolute;
+    bottom: 3vh; left: 50%;
+    transform: translateX(-50%);
+    @include mono-label(0.6rem, 0.4em);
+    color: $bone-dim;
+  }
+}
+
+#ghosts {
+  margin-top: 5vh;
+  display: grid;
+  gap: clamp(18px, 3vw, 36px);
+  grid-template-columns: repeat(auto-fit, minmax(130px, 160px));
+  justify-content: center;
+  max-width: 900px;
+  width: 100%;
+}
+
+.ghost {
+  text-align: center;
+
+  .gframe {
+    position: relative;
+    animation: hover 5s ease-in-out infinite;
+  }
+  &:nth-child(2n) .gframe { animation-delay: -2.5s; }
+  &:nth-child(3n) .gframe { animation-duration: 6.5s; }
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    filter: grayscale(1) brightness(1.12);
+    opacity: 0.8;
+    border: 1px solid rgba($ghost, 0.25);
+    box-shadow: 0 0 22px rgba($ghost, 0.28), 0 0 60px rgba($ghost, 0.12);
+    animation: seance 3.4s ease-in-out infinite;
+  }
+  &:nth-child(2n) img { animation-delay: -1.7s; }
+
+  .gname {
+    margin-top: 1em;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: $ghost;
+    line-height: 1.15;
+  }
+
+  .soon {
+    margin-top: 0.5em;
+    @include mono-label(0.56rem, 0.3em);
+    color: $bone-dim;
+    animation: throb 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+@keyframes seance {
+  0%, 100% { box-shadow: 0 0 22px rgba($ghost, 0.28), 0 0 60px rgba($ghost, 0.12); }
+  50% { box-shadow: 0 0 34px rgba($ghost, 0.5), 0 0 90px rgba($ghost, 0.22); }
+}

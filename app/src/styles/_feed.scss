@@ -1,0 +1,103 @@
+@use "vars" as *;
+
+#feed {
+  height: 100dvh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.card {
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 9vh 20px 7vh;
+  content-visibility: auto;
+  contain-intrinsic-size: 100vh;
+  position: relative;
+
+  .frame {
+    position: relative;
+    width: min(52vh, 82vw);
+    opacity: 0;
+    transform: translateY(34px) scale(0.97);
+    transition: opacity 0.7s $ease, transform 0.7s $ease;
+
+    img {
+      display: block;
+      width: 100%;
+      border: 1px solid $hair;
+      filter: grayscale(0.2) contrast(1.05);
+      transition: filter 0.5s;
+    }
+    &:hover img { filter: grayscale(0) contrast(1.08); }
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -10px;
+      border: 1px solid $hair;
+      pointer-events: none;
+    }
+  }
+
+  .fresh {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    background: $blood;
+    color: #fff;
+    z-index: 2;
+    @include mono-label(0.66rem);
+    font-weight: 500;
+    padding: 0.55em 1.3em 0.55em 1.65em;
+    white-space: nowrap;
+    animation: throb 1.6s ease-in-out infinite;
+  }
+
+  .name {
+    margin-top: 3vh;
+    text-align: center;
+    font-style: italic;
+    font-weight: 600;
+    font-size: clamp(2rem, 5.5vw, 3.8rem);
+    line-height: 1;
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.7s 0.08s $ease, transform 0.7s 0.08s $ease;
+
+    .dead { color: $blood; }
+  }
+
+  .when {
+    margin-top: 1.2vh;
+    @include mono-label;
+    color: $bone-dim;
+    opacity: 0;
+    transition: opacity 0.7s 0.16s;
+  }
+
+  .cross {
+    position: absolute;
+    bottom: 2.2vh; left: 50%;
+    transform: translateX(-50%);
+    color: $hair;
+    font-size: 0.9rem;
+  }
+
+  &.vis {
+    .frame { opacity: 1; transform: none; }
+    .name { opacity: 1; transform: none; }
+    .when { opacity: 1; }
+  }
+}
+
+@keyframes throb {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}

@@ -10,3 +10,7 @@ list_state.json
 node_modules/
 site/edits/
 site/data/
+app/node_modules/
+app/dist/
+app/public/edits/
+app/public/data/

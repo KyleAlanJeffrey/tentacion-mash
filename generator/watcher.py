@@ -38,7 +38,7 @@ from splice import make_splice, CANVAS
 ROOT = os.path.dirname(os.path.abspath(__file__))        # generator/
 REPO = os.path.dirname(ROOT)                              # repo root
 ASSETS = os.path.join(ROOT, "assets")
-SITE = os.path.join(REPO, "site")
+SITE = os.path.join(REPO, "app", "public")
 SITE_EDITS = os.path.join(SITE, "edits")
 DATA_FILE = os.path.join(SITE, "data", "edits.json")
 STATE_FILE = os.path.join(ROOT, "seen.json")

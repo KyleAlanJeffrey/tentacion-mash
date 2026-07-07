@@ -3,5 +3,8 @@
   "private": true,
   "dependencies": {
     "@cloudflare/containers": "^0.3.7"
+  },
+  "scripts": {
+    "build": "cd app && npm ci && npm run build"
   }
 }

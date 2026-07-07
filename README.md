@@ -29,11 +29,18 @@ timeline. Detection is automatic; the whole thing runs on Cloudflare.
 │   └── index.js        Cloudflare Worker: JSON API (D1), images (R2),
 │                       static site, cron that wakes the container
 │
-└── site/               the web app (static, served by the worker)
-    ├── index.html      scroll-snap timeline
-    ├── deathwatch.txt  THE WATCHLIST — expected deaths, shown as ghosts
-    ├── data/           (local mode only) edits.json
-    └── edits/          (local mode only) generated images
+└── app/                the web app — Vite + React + Sass
+    ├── index.html      entry point
+    ├── vite.config.js  dev proxy to production /api + /images
+    ├── public/
+    │   ├── deathwatch.txt   THE WATCHLIST — expected deaths, shown as ghosts
+    │   ├── data/, edits/    (local mode only) generated output
+    │   └── favicon.svg
+    └── src/
+        ├── App.jsx          data loading, refresh, toast state
+        ├── lib.js           fetch + date helpers
+        ├── components/      Feed, Card, Watchlist, Rail, Toast
+        └── styles/          Sass partials (vars, base, chrome, feed, watch)
 ```
 
 ## Local dev
@@ -46,8 +53,10 @@ timeline. Detection is automatic; the whole thing runs on Cloudflare.
 ./run.sh watch       # serve + keep checking every 30 min
 ```
 
-First run creates `.venv` automatically. Locally everything is file-based:
-images in `site/edits/`, data in `site/data/edits.json` — no Cloudflare needed.
+First run creates `.venv` and installs npm deps automatically. `./run.sh`
+serves the Vite dev server: live data proxies from production, and locally
+generated files (`app/public/edits/`, `app/public/data/edits.json`) act as
+the offline fallback.
 
 ### Tuning the splice
 
@@ -102,7 +111,8 @@ All GETs are CORS-open.
 Requires the Workers Paid plan (containers). In the Cloudflare dashboard:
 
 1. **Workers & Pages → Create → Workers → Import a repository** — pick this
-   repo, deploy command `npx wrangler deploy` (default). The deploy
+   repo, build command `npm run build`, deploy command
+   `npx wrangler deploy` (default). The deploy
    auto-creates the D1 database and R2 bucket (both named `tentacion-mash`)
    and builds + pushes the container image.
 2. **Storage & Databases → D1 → tentacion-mash → Console** — paste and run
@@ -118,7 +128,7 @@ locally ships automatically.
 
 ## The watchlist
 
-`site/deathwatch.txt` — names you *expect* to lose (one Wikipedia title per
+`app/public/deathwatch.txt` — names you *expect* to lose (one Wikipedia title per
 line). They hover above the timeline with a ghostly glow; scroll UP from the
 newest death to see the future. Portraits load client-side from Wikipedia, and
 once someone on the watchlist actually dies, the pipeline replaces their ghost

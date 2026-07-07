@@ -1,0 +1,60 @@
+@use "vars" as *;
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+
+body {
+  background: $ink;
+  color: $bone;
+  font-family: $serif;
+  overflow: hidden;
+
+  // film grain over everything
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 60;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  padding: 18px 20px 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, $ink 30%, transparent);
+
+  h1 {
+    font-family: $blackletter;
+    font-weight: 400;
+    font-size: clamp(1.4rem, 3.5vw, 2.1rem);
+    line-height: 1;
+
+    .half { color: $blood; }
+  }
+}
+
+.note {
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  @include mono-label(0.75rem, 0.15em);
+  color: $bone-dim;
+  line-height: 2.4;
+  padding: 20px;
+
+  code {
+    color: $bone;
+    border: 1px solid $hair;
+    padding: 0.2em 0.6em;
+  }
+}
