@@ -114,6 +114,56 @@ export default {
       });
     }
 
+    // ------------------------------------------------------------ SEO
+    if (p === "/og.jpg" && m === "GET") {
+      // social preview = always the newest edit
+      const top = await env.DB.prepare(
+        "SELECT slug FROM edits ORDER BY died DESC, detected_at DESC LIMIT 1").first();
+      const obj = top && await env.IMAGES.get(`${top.slug}.jpg`);
+      if (obj)
+        return new Response(obj.body, {
+          headers: { "content-type": "image/jpeg",
+                     "cache-control": "public, max-age=600", ...CORS },
+        });
+      return env.ASSETS.fetch(new Request(new URL("/xxx.jpg", req.url)));
+    }
+
+    if (p === "/sitemap.xml" && m === "GET") {
+      const { results } = await env.DB.prepare(
+        "SELECT slug, title, died FROM edits ORDER BY died DESC").all();
+      const base = env.SELF_URL || new URL(req.url).origin;
+      const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const images = results.map((e) => `  <image:image>
+    <image:loc>${base}/images/${e.slug}.jpg</image:loc>
+    <image:title>${esc(e.title)} Dead — spliced with XXXTentacion</image:title>
+  </image:image>`).join("\n");
+      const lastmod = (results[0]?.died ?? new Date().toISOString().slice(0, 10));
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<url>
+  <loc>${base}/</loc>
+  <lastmod>${lastmod}</lastmod>
+  <changefreq>hourly</changefreq>
+${images}
+</url>
+</urlset>`;
+      return new Response(xml, {
+        headers: { "content-type": "application/xml",
+                   "cache-control": "public, max-age=3600" },
+      });
+    }
+
+    if (p === "/robots.txt" && m === "GET") {
+      const base = env.SELF_URL || new URL(req.url).origin;
+      return new Response(`User-agent: *\nAllow: /\n\nSitemap: ${base}/sitemap.xml\n`,
+        { headers: { "content-type": "text/plain" } });
+    }
+
+    if ((p === "/" || p === "/index.html") && m === "GET")
+      return seoRewrite(await env.ASSETS.fetch(req), env);
+
     return env.ASSETS.fetch(req); // the site itself
   },
 
@@ -121,6 +171,68 @@ export default {
     ctx.waitUntil(checkForDeaths(env));
   },
 };
+
+// ---------------------------------------------------------------- edge SEO
+// The app is client-rendered, so at the edge we rewrite the HTML to feature
+// the newest death in title/description, inject JSON-LD structured data,
+// and add a <noscript> timeline crawlers (and JS-less humans) can read.
+async function seoRewrite(res, env) {
+  try {
+    if (typeof HTMLRewriter === "undefined") return res;
+    const { results } = await env.DB.prepare(
+      "SELECT slug, title, died FROM edits ORDER BY died DESC, detected_at DESC LIMIT 100"
+    ).all();
+    if (!results.length) return res;
+    const base = env.SELF_URL || "";
+    const top = results[0];
+    const title = `${top.title} Dead — THE OTHER HALF`;
+    const desc = `${top.title} died ${top.died}. Every celebrity death, ` +
+      `spliced with XXXTentacion within minutes — an automatic memorial ` +
+      `timeline, ${results.length}+ edits and counting.`;
+
+    const ld = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ImageGallery",
+      name: "THE OTHER HALF",
+      url: base + "/",
+      description: "Every celebrity death, spliced with XXXTentacion. " +
+        "An automatic memorial timeline.",
+      image: results.slice(0, 25).map((e) => ({
+        "@type": "ImageObject",
+        contentUrl: `${base}/images/${e.slug}.jpg`,
+        name: `${e.title} Dead`,
+        description: `${e.title} (died ${e.died}) spliced with XXXTentacion`,
+        datePublished: e.died,
+      })),
+    });
+
+    const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const noscript = `<noscript><h1>THE OTHER HALF — every celebrity death, ` +
+      `spliced with XXXTentacion</h1><ol>` +
+      results.map((e) =>
+        `<li><a href="${base}/images/${e.slug}.jpg">${esc(e.title)} Dead` +
+        `</a> — died ${e.died}</li>`).join("") +
+      `</ol></noscript>`;
+
+    const setContent = (v) => ({ element(el) { el.setAttribute("content", v); } });
+    return new HTMLRewriter()
+      .on("title", { element(el) { el.setInnerContent(title); } })
+      .on('meta[name="description"]', setContent(desc))
+      .on('meta[property="og:title"]', setContent(title))
+      .on('meta[property="og:description"]', setContent(desc))
+      .on('meta[name="twitter:title"]', setContent(title))
+      .on('meta[name="twitter:description"]', setContent(desc))
+      .on("head", { element(el) {
+        el.append(`<script type="application/ld+json">${ld}</script>`,
+                  { html: true });
+      }})
+      .on("body", { element(el) { el.append(noscript, { html: true }); } })
+      .transform(res);
+  } catch (e) {
+    console.log("seo rewrite failed:", e);
+    return res;
+  }
+}
 
 // ------------------------------------------------------------- cron side
 async function checkForDeaths(env) {

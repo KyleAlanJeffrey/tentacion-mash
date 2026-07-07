@@ -13,6 +13,8 @@
   "assets": {
     "directory": "./app/dist",
     "binding": "ASSETS",
+    // let the worker rewrite the HTML shell with fresh SEO before serving
+    "run_worker_first": ["/", "/index.html"],
   },
   "d1_databases": [
     {
