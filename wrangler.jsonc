@@ -41,13 +41,22 @@
   "durable_objects": {
     "bindings": [{ "name": "GENERATOR", "class_name": "Generator" }],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Generator"] }],
+  // v2/v3 force-recreate the DO namespace after the earlier partial deploy
+  // left migration state pointing at a deleted namespace (error 10061)
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Generator"] },
+    { "tag": "v2", "deleted_classes": ["Generator"] },
+    { "tag": "v3", "new_sqlite_classes": ["Generator"] },
+  ],
   "observability": {
     "enabled": true,
   },
+  "routes": [
+    { "pattern": "xxx5050.com", "custom_domain": true },
+  ],
   "vars": {
     // your worker's public URL — the container publishes edits back to it
-    "SELF_URL": "https://tentacion-mash.2rbf5f5gvj.workers.dev",
+    "SELF_URL": "https://xxx5050.com",
   },
   // Secrets (Worker -> Settings -> Variables and Secrets):
   //   INGEST_TOKEN    — any long random string; auths the container's uploads
