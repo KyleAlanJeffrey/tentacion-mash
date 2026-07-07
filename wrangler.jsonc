@@ -1,0 +1,9 @@
+// Cloudflare Workers config — static-asset Worker serving the site/ folder.
+// Connected via the dashboard's GitHub integration; every push redeploys.
+{
+  "name": "the-other-half",
+  "compatibility_date": "2026-07-07",
+  "assets": {
+    "directory": "./site"
+  }
+}

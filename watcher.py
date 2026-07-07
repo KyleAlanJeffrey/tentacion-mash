@@ -151,12 +151,68 @@ def summary(title):
     return get_json(f"{WIKI}/api/rest_v1/page/summary/{t}")
 
 
+# --------------------------------------------------------- portrait picking
+BAD_FILES = re.compile(r"signature|logo|map|flag|coat|stamp|icon|plaque|"
+                       r"grave|album|cover|poster", re.I)
+
+
+def media_candidates(title, limit=8):
+    """Thumb URLs of images on the article that could be portraits."""
+    t = urllib.parse.quote(title.replace(" ", "_"), safe="")
+    data = get_json(f"{WIKI}/api/rest_v1/page/media-list/{t}")
+    urls = []
+    for item in data.get("items", []):
+        name = item.get("title", "")
+        if (item.get("type") != "image" or BAD_FILES.search(name)
+                or not re.search(r"\.(jpe?g|png)$", name, re.I)):
+            continue
+        src = (item.get("srcset") or [{}])[0].get("src", "")
+        if src.startswith("//"):
+            src = "https:" + src
+        if src:
+            urls.append(src)
+        if len(urls) >= limit:
+            break
+    return urls
+
+
+def pick_portrait(title, s):
+    """Pick the flattest head-on portrait: score the lead image and the other
+    article images by face frontality x size (splice.assess_portrait)."""
+    from splice import assess_portrait
+    lead = s.get("originalimage", {}).get("source")
+    cands = [(lead, lead)] if lead else []
+    try:
+        for thumb in media_candidates(title):
+            full = re.sub(r"/(\d{2,4})px-", "/1200px-", thumb)
+            cands.append((thumb, full))
+    except Exception as e:
+        print(f"    (media list failed: {e})")
+
+    os.makedirs(ASSETS, exist_ok=True)
+    tmp = os.path.join(ASSETS, "_candidate.jpg")
+    best_url, best_score = None, 0.0
+    for thumb, full in cands[:9]:
+        try:
+            download(thumb, tmp)
+            score = assess_portrait(tmp)
+        except Exception:
+            continue
+        print(f"    candidate {thumb.rsplit('/', 1)[-1][:48]}: {score:.3f}")
+        if score > best_score:
+            best_url, best_score = full, score
+    if best_url is None and lead:
+        print("    (no frontal face found anywhere — using lead image)")
+        best_url = lead
+    return best_url
+
+
 # ---------------------------------------------------------------- pipeline
 def ensure_base_image():
     if os.path.exists(XXX_IMG):
         return
     s = summary("XXXTentacion")
-    img = s.get("originalimage", {}).get("source")
+    img = pick_portrait("XXXTentacion", s)
     if not img:
         sys.exit("Could not find XXXTentacion portrait — put one at assets/xxx.jpg")
     download(img, XXX_IMG)
@@ -191,7 +247,7 @@ def make_edit(title, s=None, died=None):
     if s.get("type") != "standard":
         print(f"  {title}: not a normal article page, skipping")
         return None
-    img = s.get("originalimage", {}).get("source")
+    img = pick_portrait(title, s)
     if not img:
         print(f"  {title}: no portrait, skipping")
         return None

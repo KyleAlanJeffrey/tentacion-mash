@@ -53,16 +53,21 @@ Pick a secret topic name, subscribe in the ntfy phone app, uncomment four
 lines — you'll get a push the moment an edit is generated. Twilio SMS or a
 Discord webhook drop into the same function.
 
-## Running it for real
+## Deploying (Cloudflare Workers, no CLI)
 
-Cron on any always-on machine:
+Everything is pre-wired for git-based deploys:
 
-```
-*/30 * * * * cd /path/to/tentacion-mash && python3 watcher.py --once >> watcher.log 2>&1
-```
+1. Push this repo to GitHub.
+2. Cloudflare dashboard → **Workers & Pages → Create → Workers →
+   Import a repository** → pick this repo → Deploy. `wrangler.jsonc` tells it
+   to serve `site/` as static assets; the suggested deploy command
+   (`npx wrangler deploy`) is correct as-is.
+3. That's it. The included GitHub Action (`.github/workflows/watch.yml`) runs
+   the watcher every 30 minutes on GitHub's runners; when someone on the list
+   dies it commits the new edit, and the push triggers a Cloudflare redeploy.
 
-Or GitHub Actions on a schedule (free) — commit the generated edits and host
-`site/` on GitHub Pages. The site is fully static, so any host works.
+To test the pipeline, open the repo's Actions tab → "watch for deaths" →
+Run workflow.
 
 ## Notes
 

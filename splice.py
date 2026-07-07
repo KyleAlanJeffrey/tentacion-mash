@@ -57,9 +57,10 @@ def _get_yunet():
     return _yunet or None
 
 
-def _find_face(img: Image.Image):
-    """Return (cx, cy, face_h) of the largest face, or None.
-    Tries YuNet (robust), then Haar (frontal only)."""
+def _detect(img: Image.Image):
+    """Largest face -> (cx, cy, face_h, frontality 0..1) or None.
+    Frontality uses YuNet's eye/nose landmarks: a head-on face has the nose
+    centered between the eyes and level eyes; yaw/roll push the score to 0."""
     if cv2 is None:
         return None
     bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
@@ -72,8 +73,13 @@ def _find_face(img: Image.Image):
         det.setInputSize((small.shape[1], small.shape[0]))
         _, faces = det.detect(small)
         if faces is not None and len(faces):
-            x, y, fw, fh = (max(faces, key=lambda f: f[2] * f[3])[:4] / scale)
-            return x + fw / 2, y + fh / 2, fh
+            f = max(faces, key=lambda r: r[2] * r[3]) / scale
+            x, y, fw, fh, rex, rey, lex, ley, nx, ny = f[:10]
+            eye_d = ((rex - lex) ** 2 + (rey - ley) ** 2) ** 0.5 or 1.0
+            yaw = abs(nx - (rex + lex) / 2) / eye_d    # nose off eye-midpoint
+            roll = abs(rey - ley) / eye_d              # eyes not level
+            frontality = max(0.0, 1.0 - 2.0 * yaw - roll)
+            return x + fw / 2, y + fh / 2, fh, frontality
 
     if _CASCADE is not None:
         gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
@@ -81,8 +87,27 @@ def _find_face(img: Image.Image):
                                           minSize=(w // 10,) * 2)
         if len(faces):
             x, y, fw, fh = max(faces, key=lambda f: f[2] * f[3])
-            return x + fw / 2, y + fh / 2, fh
+            return x + fw / 2, y + fh / 2, fh, 0.6  # haar only fires ~frontal
     return None
+
+
+def _find_face(img: Image.Image):
+    d = _detect(img)
+    return d[:3] if d else None
+
+
+def assess_portrait(path: str) -> float:
+    """How suitable is this image as a splice half? 0 = unusable.
+    Wants a face that is frontal (flat, head-on) and reasonably large."""
+    img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+    d = _detect(img)
+    if d is None:
+        return 0.0
+    cx, cy, fh, frontality = d
+    if frontality < 0.5:          # too far from head-on
+        return 0.0
+    rel = min(fh / img.size[1], 0.5)   # face height relative to image
+    return frontality * rel
 
 
 def _face_crop(img: Image.Image, size: int) -> Image.Image:
