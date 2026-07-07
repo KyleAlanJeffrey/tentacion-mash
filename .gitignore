@@ -1,7 +1,9 @@
 .venv/
 __pycache__/
 *.pyc
-generator/assets/
+generator/assets/*
+!generator/assets/xxx.jpg
+!generator/assets/xxx.jpg.json
 generator/seen.json
 list_state.json
 .env
