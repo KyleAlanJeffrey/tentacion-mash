@@ -4,9 +4,8 @@ Detection (all free, no API keys):
 
 PRIMARY — the celebrity list. Put Wikipedia article titles in celebs.txt (one
 per line). Each check, ONE batched Wikidata query asks "which of these people
-have a death date?" — cheap even for thousands of names. The first run records
-who on the list is already dead (baseline, no edits); after that, anyone who
-flips from alive to dead gets an edit.
+have a death date?" — cheap even for thousands of names. Everyone who is dead
+but not yet on the timeline gets an edit, however long ago they died.
 
 FALLBACK — if celebs.txt doesn't exist, poll the Wikipedia category
 "Deaths in <current month>" and filter by pageviews (FAME_THRESHOLD).
@@ -44,11 +43,9 @@ STATE_FILE = os.path.join(ROOT, "seen.json")
 XXX_IMG = os.path.join(ASSETS, "xxx.jpg")
 
 CELEBS_FILE = os.path.join(ROOT, "celebs.txt")
-LIST_STATE = os.path.join(ROOT, "list_state.json")
 
 HEADERS = {"User-Agent": "death-splice-prototype/0.1 (personal project)"}
 FAME_THRESHOLD = 1_000_000          # pageviews in the last 12 months (fallback mode)
-MAX_DEATH_AGE_DAYS = 60             # ignore deaths older than this (stale list adds)
 WIKI = "https://en.wikipedia.org"
 SPARQL = "https://query.wikidata.org/sparql"
 SKIP_TITLES = re.compile(r"^(List of|Deaths in|Category:|Template:)", re.I)
@@ -98,24 +95,19 @@ def query_deaths(titles, batch_size=250):
 
 def check_list():
     """Primary mode: diff the celebrity list against Wikidata death dates.
-    Any unseen death within MAX_DEATH_AGE_DAYS generates an edit — including
-    on the first run. Older deaths are recorded without an edit."""
+    Everyone on the list who is dead but not yet on the timeline gets an
+    edit, however long ago they died. The timeline itself is the record."""
     celebs = load_celebs()
     print(f"checking {len(celebs)} names against Wikidata...")
     dead = query_deaths(celebs)
-    state = load(LIST_STATE, {"dead": {}})
 
     edits = load(DATA_FILE, [])
+    have = {e["slug"] for e in edits}
     new = 0
-    for title, death_date in dead.items():
-        if title in state["dead"]:
+    for title, death_date in sorted(dead.items(), key=lambda kv: kv[1]):
+        if slugify(title) in have:
             continue
-        age = (dt.date.today() - dt.date.fromisoformat(death_date)).days
-        if age > MAX_DEATH_AGE_DAYS:
-            print(f"  {title}: died {death_date}, >"
-                  f"{MAX_DEATH_AGE_DAYS} days ago — recording only")
-            continue
-        print(f"  {title}: DIED {death_date}")
+        print(f"  {title}: died {death_date}")
         ensure_base_image()
         entry = make_edit(title, died=death_date)
         if entry:
@@ -123,8 +115,6 @@ def check_list():
             new += 1
             print(f"  ✔ edit created: {entry['image']}")
             notify(entry)
-    state["dead"] = dead
-    save(LIST_STATE, state)
     if new:
         save(DATA_FILE, edits)
     print(f"done — {new} new edit(s)")

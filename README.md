@@ -30,10 +30,9 @@ Requires Python 3.9+. Dependencies live in `.venv` (just Pillow). No API keys.
 **Primary — the celebrity list.** `celebs.txt` holds Wikipedia article titles,
 one per line (~160 seeded, add your own). Each check sends one batched query to
 Wikidata asking "which of these people have a death date?" — cheap even for
-thousands of names. The first run baselines who's already dead (no edits);
-after that, anyone who flips alive→dead gets an edit. Deaths older than 60
-days are recorded but skipped, so adding an already-dead person later doesn't
-spam the timeline.
+thousands of names. Everyone on the list who is dead but not yet on the
+timeline gets an edit, however long ago they died — the timeline itself is
+the record, so nothing is generated twice.
 
 **Fallback — category polling.** If `celebs.txt` is missing, the watcher polls
 Wikipedia's "Deaths in <this month>" category (editors add people within
@@ -45,7 +44,7 @@ REST summary API, splices it with the XXX base image (`splice.py`,
 face-centered via OpenCV), writes `site/edits/<slug>.jpg`, and prepends the
 entry to `site/data/edits.json`.
 
-State: `list_state.json` (list mode), `seen.json` (category mode).
+State: the timeline itself (list mode), `seen.json` (category mode).
 
 ## Messaging (the later feature)
 
