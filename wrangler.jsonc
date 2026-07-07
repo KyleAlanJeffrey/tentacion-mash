@@ -1,9 +1,10 @@
 // Cloudflare config — Worker (site + API + cron) and generator Container.
-// Before connecting the repo in the dashboard:
-//   1. create a D1 database, paste its id below
-//   2. create an R2 bucket named "the-other-half-image"
-//   3. run schema.sql in the D1 console
-//   4. set SELF_URL below to your worker URL after the first deploy
+// Everything is named "tentacion-mash". With modern wrangler, the D1 database
+// and R2 bucket are AUTO-CREATED on first deploy if they don't exist yet
+// (that's why there's no database_id pinned here). After the first deploy:
+//   1. run schema.sql in the D1 console (Storage & Databases -> D1 ->
+//      tentacion-mash -> Console)
+//   2. set the INGEST_TOKEN secret on the worker
 // Full steps in README.md.
 {
   "name": "tentacion-mash",
@@ -16,14 +17,13 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "the-other-half",
-      "database_id": "18de5ba8-3912-4eb4-b9b0-03c2d0729953",
+      "database_name": "tentacion-mash",
     },
   ],
   "r2_buckets": [
     {
       "binding": "IMAGES",
-      "bucket_name": "the-other-half-image",
+      "bucket_name": "tentacion-mash",
     },
   ],
   "triggers": {
@@ -43,7 +43,7 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Generator"] }],
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   "vars": {
     // your worker's public URL — the container publishes edits back to it

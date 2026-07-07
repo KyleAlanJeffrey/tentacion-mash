@@ -100,18 +100,17 @@ All GETs are CORS-open.
 
 Requires the Workers Paid plan (containers). In the Cloudflare dashboard:
 
-1. **Storage & Databases → D1 → Create** — name it `the-other-half`, copy its
-   ID into `database_id` in `wrangler.jsonc` (commit + push).
-2. In the database's **Console**, paste and run `schema.sql`.
-3. **R2 → Create bucket** named `the-other-half-images`.
-4. **Workers & Pages → Create → Workers → Import a repository** — pick this
-   repo, deploy command `npx wrangler deploy` (default). This also builds and
-   pushes the container image.
-5. Worker → **Settings → Variables and Secrets**:
+1. **Workers & Pages → Create → Workers → Import a repository** — pick this
+   repo, deploy command `npx wrangler deploy` (default). The deploy
+   auto-creates the D1 database and R2 bucket (both named `tentacion-mash`)
+   and builds + pushes the container image.
+2. **Storage & Databases → D1 → tentacion-mash → Console** — paste and run
+   `schema.sql` once.
+3. Worker → **Settings → Variables and Secrets**:
    - secret `INGEST_TOKEN` — any long random string (auths container uploads)
    - optional secret `WIKIMEDIA_TOKEN` — raises Wikimedia rate limits
      ([free token](https://api.wikimedia.org/wiki/Special:AppManagement))
-6. Set `SELF_URL` in `wrangler.jsonc` to your worker URL, commit + push.
+4. Set `SELF_URL` in `wrangler.jsonc` to your worker URL, commit + push.
 
 Every push redeploys worker, site, and container image — so tuning done
 locally ships automatically.
