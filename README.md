@@ -29,17 +29,20 @@ timeline. Detection is automatic; the whole thing runs on Cloudflare.
 │   └── index.js        Cloudflare Worker: JSON API (D1), images (R2),
 │                       static site, cron that wakes the container
 │
-└── app/                the web app — Vite + React + Sass
+└── app/                the web app — Vite + React + TypeScript + Sass
     ├── index.html      entry point
-    ├── vite.config.js  dev proxy to production /api + /images
+    ├── vite.config.ts  dev proxy to production /api + /images
+    ├── tsconfig.json
     ├── public/
     │   ├── deathwatch.txt   THE WATCHLIST — expected deaths, shown as ghosts
+    │   ├── xxx.jpg          base image (haunts the watchlist ghosts)
     │   ├── data/, edits/    (local mode only) generated output
     │   └── favicon.svg
     └── src/
-        ├── App.jsx          data loading, refresh, toast state
-        ├── lib.js           fetch + date helpers
-        ├── components/      Feed, Card, Watchlist, Rail, Toast
+        ├── App.tsx          data loading, refresh, toast state
+        ├── lib.ts           fetch + date helpers
+        ├── types.ts         Edit / Ghost / RailInfo
+        ├── components/      Feed, Card, Watchlist, Rail, Toast (.tsx)
         └── styles/          Sass partials (vars, base, chrome, feed, watch)
 ```
 

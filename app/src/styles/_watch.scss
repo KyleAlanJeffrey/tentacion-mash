@@ -50,6 +50,7 @@
 
   .gframe {
     position: relative;
+    overflow: hidden;
     animation: hover 5s ease-in-out infinite;
   }
   &:nth-child(2n) .gframe { animation-delay: -2.5s; }
@@ -67,6 +68,21 @@
     animation: seance 3.4s ease-in-out infinite;
   }
   &:nth-child(2n) img { animation-delay: -1.7s; }
+
+  // XXX's half, manifesting over the left side of the portrait —
+  // the edit arriving before the death does
+  img.xxx {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    clip-path: inset(0 50% 0 0);
+    border: none;
+    box-shadow: none;
+    opacity: 0;
+    animation: manifest 9s ease-in-out infinite;
+  }
+  &:nth-child(2n) img.xxx { animation-delay: -3s; }
+  &:nth-child(3n) img.xxx { animation-delay: -6s; }
 
   .gname {
     margin-top: 1em;
@@ -93,4 +109,10 @@
 @keyframes seance {
   0%, 100% { box-shadow: 0 0 22px rgba($ghost, 0.28), 0 0 60px rgba($ghost, 0.12); }
   50% { box-shadow: 0 0 34px rgba($ghost, 0.5), 0 0 90px rgba($ghost, 0.22); }
+}
+
+@keyframes manifest {
+  0%, 42% { opacity: 0; }
+  58%, 74% { opacity: 0.85; }
+  90%, 100% { opacity: 0; }
 }

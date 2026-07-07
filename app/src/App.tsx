@@ -1,27 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import Feed from "./components/Feed.jsx";
-import Rail from "./components/Rail.jsx";
-import Toast from "./components/Toast.jsx";
-import { diedDate, fetchEdits, fetchGhosts } from "./lib.js";
+import Feed from "./components/Feed";
+import Rail from "./components/Rail";
+import Toast from "./components/Toast";
+import { diedDate, fetchEdits, fetchGhosts } from "./lib";
+import type { Edit, Ghost, RailInfo } from "./types";
 
 const REFRESH_MS = 60_000;
 
 export default function App() {
-  const [edits, setEdits] = useState(null);       // null = loading
-  const [ghosts, setGhosts] = useState([]);
+  const [edits, setEdits] = useState<Edit[] | null>(null); // null = loading
+  const [ghosts, setGhosts] = useState<Ghost[]>([]);
   const [error, setError] = useState(false);
   const [toast, setToast] = useState(false);
-  const [rail, setRail] = useState(null);         // {year, pos, fill, top}
-  const pending = useRef(null);                   // data waiting behind toast
-  const feedRef = useRef(null);
+  const [rail, setRail] = useState<RailInfo | null>(null);
+  const pending = useRef<Edit[] | null>(null);  // data waiting behind toast
+  const feedRef = useRef<HTMLElement | null>(null);
 
-  const apply = useCallback((data) => {
-    data.sort((a, b) => diedDate(b) - diedDate(a));
+  const apply = useCallback((data: Edit[]) => {
+    data.sort((a, b) => diedDate(b).getTime() - diedDate(a).getTime());
     setEdits((cur) => {
       const changed = !cur || data.length !== cur.length ||
         (data[0] && cur[0] && data[0].slug !== cur[0].slug);
       if (!changed) return cur;
-      const browsing = cur?.length &&
+      const browsing = !!cur?.length &&
         (feedRef.current?.scrollTop ?? 0) > window.innerHeight / 2;
       if (browsing) {                 // don't yank the page mid-scroll
         pending.current = data;

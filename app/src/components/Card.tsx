@@ -1,6 +1,7 @@
-import { daysSince, diedDate, fmt } from "../lib.js";
+import { daysSince, diedDate, fmt } from "../lib";
+import type { Edit } from "../types";
 
-export default function Card({ edit, i }) {
+export default function Card({ edit, i }: { edit: Edit; i: number }) {
   const died = diedDate(edit);
   const days = daysSince(died);
   const when = days === 0 ? "DIED TODAY"

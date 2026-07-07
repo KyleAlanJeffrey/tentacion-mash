@@ -1,5 +1,12 @@
+import type { RailInfo } from "../types";
+
+interface RailProps {
+  info: RailInfo | null;
+  count: number;
+}
+
 /** Fixed side rail: year you're passing, position, progress into the past. */
-export default function Rail({ info, count }) {
+export default function Rail({ info, count }: RailProps) {
   if (!info || !count) return null;
   return (
     <>
