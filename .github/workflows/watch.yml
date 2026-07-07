@@ -28,6 +28,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: check for new deaths
+        env:
+          WIKIMEDIA_TOKEN: ${{ secrets.WIKIMEDIA_TOKEN }}   # optional, raises rate limit
         run: python watcher.py --once
 
       - name: commit new edits

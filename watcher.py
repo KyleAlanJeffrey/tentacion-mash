@@ -47,6 +47,13 @@ CELEBS_FILE = os.path.join(ROOT, "celebs.txt")
 # Wikimedia etiquette: identify yourself and don't hammer.
 HEADERS = {"User-Agent": "the-other-half/0.1 (kjeffrey@stout.ai; personal project)"}
 THROTTLE_SECONDS = 0.6              # minimum gap between any two requests
+
+# Optional: a free personal API token from api.wikimedia.org raises the
+# Wikimedia rate limit from 500/hr (per IP) to 5,000/hr.
+#   export WIKIMEDIA_TOKEN=...        (locally)
+#   repo Settings -> Secrets -> Actions -> WIKIMEDIA_TOKEN   (GitHub Action)
+if os.environ.get("WIKIMEDIA_TOKEN"):
+    HEADERS["Authorization"] = "Bearer " + os.environ["WIKIMEDIA_TOKEN"]
 FAME_THRESHOLD = 1_000_000          # pageviews in the last 12 months (fallback mode)
 WIKI = "https://en.wikipedia.org"
 SPARQL = "https://query.wikidata.org/sparql"
