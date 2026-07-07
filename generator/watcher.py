@@ -44,7 +44,7 @@ DATA_FILE = os.path.join(SITE, "data", "edits.json")
 STATE_FILE = os.path.join(ROOT, "seen.json")
 XXX_IMG = os.path.join(ASSETS, "xxx.jpg")
 
-CELEBS_FILE = os.path.join(REPO, "celebs.txt")
+CELEBS_FILE = os.path.join(REPO, "data", "celebs.txt")
 
 # Wikimedia etiquette: identify yourself and don't hammer.
 HEADERS = {"User-Agent": "the-other-half/0.1 (kjeffrey@stout.ai; personal project)"}
@@ -57,6 +57,7 @@ THROTTLE_SECONDS = 0.6              # minimum gap between any two requests
 if os.environ.get("WIKIMEDIA_TOKEN"):
     HEADERS["Authorization"] = "Bearer " + os.environ["WIKIMEDIA_TOKEN"]
 FAME_THRESHOLD = 1_000_000          # pageviews in the last 12 months (fallback mode)
+MAX_NEW_PER_RUN = int(os.environ.get("MAX_NEW_PER_RUN", 20))  # backfill batch size
 WIKI = "https://en.wikipedia.org"
 SPARQL = "https://query.wikidata.org/sparql"
 SKIP_TITLES = re.compile(r"^(List of|Deaths in|Category:|Template:)", re.I)
@@ -136,9 +137,13 @@ def check_list(publish=False):
     edits = load(DATA_FILE, [])
     have = api_slugs() if publish else {e["slug"] for e in edits}
     new = 0
-    for title, death_date in sorted(dead.items(), key=lambda kv: kv[1]):
+    # newest deaths first, so recent ones never wait behind a backfill
+    for title, death_date in sorted(dead.items(), key=lambda kv: kv[1], reverse=True):
         if slugify(title) in have:
             continue
+        if new >= MAX_NEW_PER_RUN:
+            print(f"  (cap of {MAX_NEW_PER_RUN} reached — the rest backfill next run)")
+            break
         print(f"  {title}: died {death_date}")
         ensure_base_image()
         try:

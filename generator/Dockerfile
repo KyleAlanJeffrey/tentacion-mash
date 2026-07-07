@@ -6,7 +6,7 @@ WORKDIR /app
 COPY generator/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY celebs.txt .
+COPY data/celebs.txt data/celebs.txt
 COPY generator/ generator/
 
 EXPOSE 8080

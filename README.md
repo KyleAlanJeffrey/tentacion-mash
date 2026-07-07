@@ -9,7 +9,7 @@ timeline. Detection is automatic; the whole thing runs on Cloudflare.
 ```
 ├── run.sh              local dev: generate edits + serve the site
 ├── setup.sh            creates .venv and installs Python deps
-├── celebs.txt          THE LIST — one Wikipedia article title per line
+├── data/celebs.txt     THE LIST — one Wikipedia article title per line
 ├── schema.sql          D1 table, run once in the dashboard console
 ├── wrangler.jsonc      Cloudflare config (worker, container, D1, R2, cron)
 ├── package.json        @cloudflare/containers dependency for the worker
@@ -70,7 +70,7 @@ A sidecar `.json` next to any image always overrides detection.
 
 ## How detection works
 
-`celebs.txt` holds Wikipedia article titles. Each check sends one batched
+`data/celebs.txt` holds Wikipedia article titles. Each check sends one batched
 Wikidata query — "which of these people have a death date (P570)?" — cheap
 even for thousands of names. Anyone dead but not yet on the timeline gets an
 edit (the timeline is the record, nothing generates twice). The best portrait
