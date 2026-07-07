@@ -109,7 +109,11 @@ def check_list():
             continue
         print(f"  {title}: died {death_date}")
         ensure_base_image()
-        entry = make_edit(title, died=death_date)
+        try:
+            entry = make_edit(title, died=death_date)
+        except Exception as e:
+            print(f"  ✗ {title}: {e}")
+            continue
         if entry:
             edits.insert(0, entry)
             new += 1
@@ -157,10 +161,10 @@ BAD_FILES = re.compile(r"signature|logo|map|flag|coat|stamp|icon|plaque|"
 
 
 def media_candidates(title, limit=8):
-    """Thumb URLs of images on the article that could be portraits."""
+    """(thumb_url, File: title) pairs for article images that could be portraits."""
     t = urllib.parse.quote(title.replace(" ", "_"), safe="")
     data = get_json(f"{WIKI}/api/rest_v1/page/media-list/{t}")
-    urls = []
+    out = []
     for item in data.get("items", []):
         name = item.get("title", "")
         if (item.get("type") != "image" or BAD_FILES.search(name)
@@ -170,10 +174,18 @@ def media_candidates(title, limit=8):
         if src.startswith("//"):
             src = "https:" + src
         if src:
-            urls.append(src)
-        if len(urls) >= limit:
+            out.append((src, name))
+        if len(out) >= limit:
             break
-    return urls
+    return out
+
+
+def original_url(file_title):
+    """Full-resolution URL for a File: title via the imageinfo API."""
+    url = (f"{WIKI}/w/api.php?action=query&prop=imageinfo&iiprop=url"
+           f"&titles={urllib.parse.quote(file_title)}&format=json")
+    pages = get_json(url)["query"]["pages"]
+    return next(iter(pages.values()))["imageinfo"][0]["url"]
 
 
 def pick_portrait(title, s):
@@ -181,30 +193,35 @@ def pick_portrait(title, s):
     article images by face frontality x size (splice.assess_portrait)."""
     from splice import assess_portrait
     lead = s.get("originalimage", {}).get("source")
-    cands = [(lead, lead)] if lead else []
+    cands = [(lead, None)] if lead else []
     try:
-        for thumb in media_candidates(title):
-            full = re.sub(r"/(\d{2,4})px-", "/1200px-", thumb)
-            cands.append((thumb, full))
+        cands += media_candidates(title)
     except Exception as e:
         print(f"    (media list failed: {e})")
 
     os.makedirs(ASSETS, exist_ok=True)
     tmp = os.path.join(ASSETS, "_candidate.jpg")
-    best_url, best_score = None, 0.0
-    for thumb, full in cands[:9]:
+    best, best_score = None, 0.0
+    for url, ftitle in cands[:9]:
         try:
-            download(thumb, tmp)
+            download(url, tmp)
             score = assess_portrait(tmp)
         except Exception:
             continue
-        print(f"    candidate {thumb.rsplit('/', 1)[-1][:48]}: {score:.3f}")
+        print(f"    candidate {url.rsplit('/', 1)[-1][:48]}: {score:.3f}")
         if score > best_score:
-            best_url, best_score = full, score
-    if best_url is None and lead:
-        print("    (no frontal face found anywhere — using lead image)")
-        best_url = lead
-    return best_url
+            best, best_score = (url, ftitle), score
+    if best is None:
+        if lead:
+            print("    (no frontal face found anywhere — using lead image)")
+        return lead
+    url, ftitle = best
+    if ftitle:  # media-list thumb — resolve the original file
+        try:
+            return original_url(ftitle)
+        except Exception:
+            return url  # the thumb we already validated
+    return url
 
 
 # ---------------------------------------------------------------- pipeline
@@ -326,7 +343,11 @@ def regen():
     ensure_base_image()
     edits = load(DATA_FILE, [])
     for old in edits:
-        entry = make_edit(old["title"], died=old.get("died"))
+        try:
+            entry = make_edit(old["title"], died=old.get("died"))
+        except Exception as e:
+            print(f"  ✗ {old['title']}: {e} — keeping existing image")
+            continue
         if entry:
             entry["detected_at"] = old["detected_at"]
             old.update(entry)
