@@ -1,1 +1,52 @@
-[]
+[
+  {
+    "title": "Oliver Tree",
+    "slug": "oliver-tree",
+    "description": "American musician (1993\u20132026)",
+    "extract": "Oliver Tree Nickell was an American singer-songwriter, rapper, and record producer. Tree signed to Atlantic Records in 2017 after his song \"When I'm Down\" went viral. He released his debut studio album Ugly Is Beautiful in July 2020, which included the RIAA gold- and platinum-certified singles \"Alien Boy\", \"Hurt\", \"Miracle Man\" and \"Let Me Down\". Classified as a \"genre-defying musician\", he achieved international recognition with his songs \"Life Goes On\" in 2021 and \"Miss You\" in 2022. Tree released his second studio album, Cowboy Tears, in February 2022; his third studio album, Alone in a Crowd, in September 2023; and his fourth studio album, Love You Madly Hate You Badly, in April 2026.",
+    "wiki_url": "https://en.wikipedia.org/wiki/Oliver_Tree",
+    "image": "edits/oliver-tree.jpg",
+    "died": "2026-06-14",
+    "detected_at": "2026-07-07T17:08:20.423202+00:00"
+  },
+  {
+    "title": "Stephen Hawking",
+    "slug": "stephen-hawking",
+    "description": "English theoretical physicist (1942\u20132018)",
+    "extract": "Stephen William Hawking was an English theoretical astrophysicist, cosmologist, and author who was director of research at the Centre for Theoretical Cosmology at the University of Cambridge. Between 1979 and 2009, he was the Lucasian Professor of Mathematics at Cambridge, widely viewed as one of the most prestigious academic posts in the world.",
+    "wiki_url": "https://en.wikipedia.org/wiki/Stephen_Hawking",
+    "image": "edits/stephen-hawking.jpg",
+    "died": "2018-03-14",
+    "detected_at": "2026-07-07T17:07:16.765954+00:00"
+  },
+  {
+    "title": "Pope Francis",
+    "slug": "pope-francis",
+    "description": "Head of the Catholic Church from 2013 to 2025",
+    "extract": "Pope Francis was the head of the Catholic Church and sovereign of Vatican City from 13 March 2013 until his death in 2025. He was the first Jesuit pope, the first Latin American, and the first pope born or raised outside Europe since the 8th-century Syrian pope Gregory\u00a0III.",
+    "wiki_url": "https://en.wikipedia.org/wiki/Pope_Francis",
+    "image": "edits/pope-francis.jpg",
+    "died": "2025-04-21",
+    "detected_at": "2026-07-07T17:07:03.388915+00:00"
+  },
+  {
+    "title": "Paul Walker",
+    "slug": "paul-walker",
+    "description": "American actor (1973\u20132013)",
+    "extract": "Paul William Walker IV was an American actor. He was best known for his role as Brian O'Conner in the Fast & Furious franchise (2001\u20132015).",
+    "wiki_url": "https://en.wikipedia.org/wiki/Paul_Walker",
+    "image": "edits/paul-walker.jpg",
+    "died": "2013-11-30",
+    "detected_at": "2026-07-07T17:07:02.001174+00:00"
+  },
+  {
+    "title": "Ozzy Osbourne",
+    "slug": "ozzy-osbourne",
+    "description": "English musician and media personality (1948\u20132025)",
+    "extract": "John Michael \"Ozzy\" Osbourne was an English singer, songwriter, and media personality. Dubbed the \"Prince of Darkness\", he is widely credited as a pioneer of heavy metal music. He co-founded the band Black Sabbath in 1968, and rose to prominence in the 1970s as their lead vocalist. He performed on the band's first eight studio albums, including Black Sabbath, Paranoid and Master of Reality (1971), before he was fired in 1979 due to his problems with alcohol and other drugs.",
+    "wiki_url": "https://en.wikipedia.org/wiki/Ozzy_Osbourne",
+    "image": "edits/ozzy-osbourne.jpg",
+    "died": "2025-07-22",
+    "detected_at": "2026-07-07T17:05:51.163329+00:00"
+  }
+]
