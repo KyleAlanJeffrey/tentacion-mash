@@ -4,3 +4,10 @@ __pycache__/
 assets/
 seen.json
 list_state.json
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
