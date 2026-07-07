@@ -44,22 +44,45 @@ XXX_IMG = os.path.join(ASSETS, "xxx.jpg")
 
 CELEBS_FILE = os.path.join(ROOT, "celebs.txt")
 
-HEADERS = {"User-Agent": "death-splice-prototype/0.1 (personal project)"}
+# Wikimedia etiquette: identify yourself and don't hammer.
+HEADERS = {"User-Agent": "the-other-half/0.1 (kjeffrey@stout.ai; personal project)"}
+THROTTLE_SECONDS = 0.6              # minimum gap between any two requests
 FAME_THRESHOLD = 1_000_000          # pageviews in the last 12 months (fallback mode)
 WIKI = "https://en.wikipedia.org"
 SPARQL = "https://query.wikidata.org/sparql"
 SKIP_TITLES = re.compile(r"^(List of|Deaths in|Category:|Template:)", re.I)
 
 
+_last_request = 0.0
+
+
+def _request(url, timeout, data=None):
+    """Throttled fetch with backoff on 429/503 (honors Retry-After)."""
+    global _last_request
+    req = urllib.request.Request(url, data=data, headers=HEADERS)
+    for attempt in range(4):
+        wait = _last_request + THROTTLE_SECONDS - time.time()
+        if wait > 0:
+            time.sleep(wait)
+        _last_request = time.time()
+        try:
+            return urllib.request.urlopen(req, timeout=timeout)
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 503) and attempt < 3:
+                delay = int(e.headers.get("Retry-After") or 0) or 15 * (attempt + 1)
+                print(f"    (rate limited — waiting {delay}s)")
+                time.sleep(delay)
+                continue
+            raise
+
+
 def get_json(url):
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with _request(url, 30) as r:
         return json.load(r)
 
 
 def download(url, path):
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=60) as r, open(path, "wb") as f:
+    with _request(url, 60) as r, open(path, "wb") as f:
         f.write(r.read())
 
 
@@ -85,8 +108,7 @@ def query_deaths(titles, batch_size=250):
                           schema:name ?name .
                  ?p wdt:P570 ?death . }""" % values
         body = urllib.parse.urlencode({"query": q, "format": "json"}).encode()
-        req = urllib.request.Request(SPARQL, data=body, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with _request(SPARQL, 60, data=body) as r:
             data = json.load(r)
         for row in data["results"]["bindings"]:
             dead[row["name"]["value"]] = row["death"]["value"][:10]
