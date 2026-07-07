@@ -8,15 +8,27 @@
 //   GET    /images/:file         serve images from R2
 //   *                            static site from the assets binding
 //
-// A cron trigger polls Wikidata for deaths on celebs.txt. Image generation
-// needs Python (face detection), so on a new death the cron dispatches the
-// GitHub Action, which generates the edit and POSTs it back here.
+// Every 15 minutes the cron wakes the generator container (native Python +
+// OpenCV — see container/), which diffs celebs.txt against Wikidata,
+// generates splices for new deaths, and publishes back through this API.
+// The container exits in ~2s when nobody has died, so it costs pennies.
 
-const UA = "the-other-half-worker/0.1 (github.com/KyleAlanJeffrey/tentacion-mash)";
+import { Container } from "@cloudflare/containers";
+
 const CORS = { "access-control-allow-origin": "*" };
 
-const slugify = (t) =>
-  t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+export class Generator extends Container {
+  defaultPort = 8080;
+  sleepAfter = "5m";
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.envVars = {
+      WORKER_URL: env.SELF_URL ?? "",
+      INGEST_TOKEN: env.INGEST_TOKEN ?? "",
+      WIKIMEDIA_TOKEN: env.WIKIMEDIA_TOKEN ?? "",
+    };
+  }
+}
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data, null, 2), {
@@ -112,64 +124,8 @@ export default {
 
 // ------------------------------------------------------------- cron side
 async function checkForDeaths(env) {
-  if (!env.GITHUB_REPO) return console.log("GITHUB_REPO not set — cron idle");
-  const names = await celebList(env);
-  const dead = await queryDeaths(names);
-  const { results } = await env.DB.prepare("SELECT slug FROM edits").all();
-  const have = new Set(results.map((r) => r.slug));
-  const fresh = Object.keys(dead).filter((t) => !have.has(slugify(t)));
-  if (!fresh.length) return console.log(`checked ${names.length} names — no new deaths`);
-
-  console.log("NEW DEATHS:", fresh.join(", "), "— dispatching generator");
-  if (!env.GITHUB_TOKEN) return console.log("GITHUB_TOKEN not set — cannot dispatch");
-  const r = await fetch(
-    `https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/watch.yml/dispatches`,
-    {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${env.GITHUB_TOKEN}`,
-        accept: "application/vnd.github+json",
-        "user-agent": UA,
-      },
-      body: JSON.stringify({ ref: "main" }),
-    },
-  );
-  console.log("dispatch:", r.status);
-}
-
-async function celebList(env) {
-  const r = await fetch(
-    `https://raw.githubusercontent.com/${env.GITHUB_REPO}/main/celebs.txt`,
-    { headers: { "user-agent": UA } },
-  );
-  if (!r.ok) throw new Error(`celebs.txt fetch: ${r.status}`);
-  return (await r.text()).split("\n").map((s) => s.trim())
-    .filter((s) => s && !s.startsWith("#"));
-}
-
-async function queryDeaths(names, batchSize = 250) {
-  const dead = {};
-  for (let i = 0; i < names.length; i += batchSize) {
-    const values = names.slice(i, i + batchSize)
-      .map((n) => `"${n.replace(/"/g, '\\"')}"@en`).join(" ");
-    const q = `SELECT ?name ?death WHERE {
-      VALUES ?name { ${values} }
-      ?article schema:about ?p ;
-               schema:isPartOf <https://en.wikipedia.org/> ;
-               schema:name ?name .
-      ?p wdt:P570 ?death . }`;
-    const r = await fetch("https://query.wikidata.org/sparql", {
-      method: "POST",
-      headers: {
-        "content-type": "application/x-www-form-urlencoded",
-        "user-agent": UA,
-      },
-      body: new URLSearchParams({ query: q, format: "json" }),
-    });
-    if (!r.ok) throw new Error(`wikidata: ${r.status}`);
-    const data = await r.json();
-    for (const row of data.results.bindings)
-      dead[row.name.value] = row.death.value.slice(0, 10);
-  }
-  return dead;
+  const stub = env.GENERATOR.get(env.GENERATOR.idFromName("generator"));
+  const r = await stub.fetch("https://generator/generate", { method: "POST" });
+  const out = await r.text();
+  console.log("generator:", r.status, out.slice(-800));
 }

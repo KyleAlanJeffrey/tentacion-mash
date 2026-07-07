@@ -1,8 +1,9 @@
-// Cloudflare Worker config — API + cron + static site.
+// Cloudflare config — Worker (site + API + cron) and generator Container.
 // Before connecting the repo in the dashboard:
-//   1. create a D1 database and paste its id below
+//   1. create a D1 database, paste its id below
 //   2. create an R2 bucket named "the-other-half-images"
 //   3. run schema.sql in the D1 console
+//   4. set SELF_URL below to your worker URL after the first deploy
 // Full steps in README.md.
 {
   "name": "the-other-half",
@@ -28,11 +29,24 @@
   "triggers": {
     "crons": ["*/15 * * * *"]
   },
+  "containers": [
+    {
+      "class_name": "Generator",
+      "image": "./container/Dockerfile",
+      "image_build_context": ".",
+      "max_instances": 1,
+      "instance_type": "basic"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "GENERATOR", "class_name": "Generator" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Generator"] }],
   "vars": {
-    // repo the cron reads celebs.txt from and dispatches the generator in
-    "GITHUB_REPO": "KyleAlanJeffrey/tentacion-mash"
+    // your worker's public URL — the container publishes edits back to it
+    "SELF_URL": "https://the-other-half.YOUR-SUBDOMAIN.workers.dev"
   }
-  // Secrets (dashboard -> Worker -> Settings -> Variables and Secrets):
-  //   INGEST_TOKEN — shared secret the GitHub Action uses to POST edits
-  //   GITHUB_TOKEN — fine-grained PAT with Actions:write, for cron dispatch
+  // Secrets (Worker -> Settings -> Variables and Secrets):
+  //   INGEST_TOKEN    — any long random string; auths the container's uploads
+  //   WIKIMEDIA_TOKEN — optional, raises Wikimedia rate limits
 }

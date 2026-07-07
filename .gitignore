@@ -5,3 +5,4 @@ assets/
 seen.json
 list_state.json
 .env
+node_modules/

@@ -74,30 +74,31 @@ All GETs are CORS-open — build anything on top.
 
 ### One-time wiring (dashboard only, ~10 minutes)
 
-Cloudflare:
+Requires the Workers Paid plan (containers). In the Cloudflare dashboard:
+
 1. **Storage & Databases → D1 → Create** — name it `the-other-half`, copy its
    ID into `database_id` in `wrangler.jsonc` (commit + push).
 2. In the new database's **Console**, paste and run `schema.sql`.
 3. **R2 → Create bucket** named `the-other-half-images`.
 4. **Workers & Pages → Create → Workers → Import a repository** — pick this
-   repo, deploy command `npx wrangler deploy` (default). Deploy.
-5. Worker → **Settings → Variables and Secrets**, add secrets:
-   - `INGEST_TOKEN` — any long random string (shared with GitHub below)
-   - `GITHUB_TOKEN` — fine-grained PAT for this repo with **Actions:
-     Read and write**, so the cron can dispatch the generator instantly
-
-GitHub (repo → Settings → Secrets and variables → Actions):
-   - `WORKER_URL` — your worker URL, e.g. `https://the-other-half.you.workers.dev`
-   - `INGEST_TOKEN` — same string as above
-   - `WIKIMEDIA_TOKEN` — optional, raises Wikimedia rate limits
+   repo, deploy command `npx wrangler deploy` (default). Deploy. This also
+   builds and pushes the generator container image.
+5. Worker → **Settings → Variables and Secrets**:
+   - secret `INGEST_TOKEN` — any long random string (auths container uploads)
+   - optional secret `WIKIMEDIA_TOKEN` — raises Wikimedia rate limits
+6. Put your worker URL (e.g. `https://the-other-half.you.workers.dev`) in
+   `SELF_URL` in `wrangler.jsonc`, commit + push (auto-redeploys).
 
 ### How it flows
 
-Worker cron (every 15 min) polls Wikidata for the list → new death →
-dispatches the GitHub Action → Action generates the splice (face detection
-needs Python, which can't run on Workers) → POSTs image to R2 + metadata to
-D1 through the API → site reads `/api/edits` live. The Action's own 30-min
-schedule doubles as a backup; the API upsert makes double-runs harmless.
+Worker cron (every 15 min) wakes the generator **Container** — native Python,
+Pillow, OpenCV, no serverless-runtime compromises. It diffs `celebs.txt`
+against Wikidata and the API, generates splices for anyone new, uploads image
+to R2 + metadata to D1 through the API, then the container sleeps. A no-death
+check costs ~2 seconds of billed container time.
+
+The GitHub Action remains as a manual backup generator (Actions tab → Run
+workflow; needs `WORKER_URL` + `INGEST_TOKEN` repo secrets).
 
 Local dev is unchanged: `./run.sh` serves everything from local files.
 
