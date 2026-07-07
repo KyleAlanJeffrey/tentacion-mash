@@ -9,6 +9,9 @@
 set -e
 cd "$(dirname "$0")"
 
+# load local credentials if present
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
+
 PORT="${PORT:-8000}"
 
 # use the project virtualenv, creating it via setup.sh if needed
