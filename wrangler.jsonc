@@ -1,9 +1,38 @@
-// Cloudflare Workers config — static-asset Worker serving the site/ folder.
-// Connected via the dashboard's GitHub integration; every push redeploys.
+// Cloudflare Worker config — API + cron + static site.
+// Before connecting the repo in the dashboard:
+//   1. create a D1 database and paste its id below
+//   2. create an R2 bucket named "the-other-half-images"
+//   3. run schema.sql in the D1 console
+// Full steps in README.md.
 {
   "name": "the-other-half",
+  "main": "worker/index.js",
   "compatibility_date": "2026-07-07",
   "assets": {
-    "directory": "./site"
+    "directory": "./site",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "the-other-half",
+      "database_id": "PASTE_YOUR_D1_DATABASE_ID_HERE"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "the-other-half-images"
+    }
+  ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "vars": {
+    // repo the cron reads celebs.txt from and dispatches the generator in
+    "GITHUB_REPO": "KyleAlanJeffrey/tentacion-mash"
   }
+  // Secrets (dashboard -> Worker -> Settings -> Variables and Secrets):
+  //   INGEST_TOKEN — shared secret the GitHub Action uses to POST edits
+  //   GITHUB_TOKEN — fine-grained PAT with Actions:write, for cron dispatch
 }

@@ -53,21 +53,53 @@ Pick a secret topic name, subscribe in the ntfy phone app, uncomment four
 lines — you'll get a push the moment an edit is generated. Twilio SMS or a
 Discord webhook drop into the same function.
 
-## Deploying (Cloudflare Workers, no CLI)
+## Deploying — the Cloudflare stack
 
-Everything is pre-wired for git-based deploys:
+**Worker** (serves site + API, cron-polls Wikidata) · **D1** (edit metadata) ·
+**R2** (splice images) · **GitHub Action** (Python image generation, dispatched
+by the cron, publishes back via the API).
 
-1. Push this repo to GitHub.
-2. Cloudflare dashboard → **Workers & Pages → Create → Workers →
-   Import a repository** → pick this repo → Deploy. `wrangler.jsonc` tells it
-   to serve `site/` as static assets; the suggested deploy command
-   (`npx wrangler deploy`) is correct as-is.
-3. That's it. The included GitHub Action (`.github/workflows/watch.yml`) runs
-   the watcher every 30 minutes on GitHub's runners; when someone on the list
-   dies it commits the new edit, and the push triggers a Cloudflare redeploy.
+### API
 
-To test the pipeline, open the repo's Actions tab → "watch for deaths" →
-Run workflow.
+```
+GET    /api/edits           all edits, newest death first
+GET    /api/edits/:slug     one edit
+GET    /images/:slug.jpg    the splice image (R2)
+POST   /api/edits           upsert metadata      (Bearer INGEST_TOKEN)
+PUT    /api/images/:slug    upload image         (Bearer INGEST_TOKEN)
+DELETE /api/edits/:slug     remove edit + image  (Bearer INGEST_TOKEN)
+```
+
+All GETs are CORS-open — build anything on top.
+
+### One-time wiring (dashboard only, ~10 minutes)
+
+Cloudflare:
+1. **Storage & Databases → D1 → Create** — name it `the-other-half`, copy its
+   ID into `database_id` in `wrangler.jsonc` (commit + push).
+2. In the new database's **Console**, paste and run `schema.sql`.
+3. **R2 → Create bucket** named `the-other-half-images`.
+4. **Workers & Pages → Create → Workers → Import a repository** — pick this
+   repo, deploy command `npx wrangler deploy` (default). Deploy.
+5. Worker → **Settings → Variables and Secrets**, add secrets:
+   - `INGEST_TOKEN` — any long random string (shared with GitHub below)
+   - `GITHUB_TOKEN` — fine-grained PAT for this repo with **Actions:
+     Read and write**, so the cron can dispatch the generator instantly
+
+GitHub (repo → Settings → Secrets and variables → Actions):
+   - `WORKER_URL` — your worker URL, e.g. `https://the-other-half.you.workers.dev`
+   - `INGEST_TOKEN` — same string as above
+   - `WIKIMEDIA_TOKEN` — optional, raises Wikimedia rate limits
+
+### How it flows
+
+Worker cron (every 15 min) polls Wikidata for the list → new death →
+dispatches the GitHub Action → Action generates the splice (face detection
+needs Python, which can't run on Workers) → POSTs image to R2 + metadata to
+D1 through the API → site reads `/api/edits` live. The Action's own 30-min
+schedule doubles as a backup; the API upsert makes double-runs harmless.
+
+Local dev is unchanged: `./run.sh` serves everything from local files.
 
 ## Notes
 

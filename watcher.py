@@ -122,16 +122,17 @@ def query_deaths(titles, batch_size=250):
     return dead
 
 
-def check_list():
+def check_list(publish=False):
     """Primary mode: diff the celebrity list against Wikidata death dates.
     Everyone on the list who is dead but not yet on the timeline gets an
-    edit, however long ago they died. The timeline itself is the record."""
+    edit, however long ago they died. The timeline itself is the record —
+    local edits.json, or the worker API when publishing."""
     celebs = load_celebs()
     print(f"checking {len(celebs)} names against Wikidata...")
     dead = query_deaths(celebs)
 
     edits = load(DATA_FILE, [])
-    have = {e["slug"] for e in edits}
+    have = api_slugs() if publish else {e["slug"] for e in edits}
     new = 0
     for title, death_date in sorted(dead.items(), key=lambda kv: kv[1]):
         if slugify(title) in have:
@@ -144,11 +145,13 @@ def check_list():
             print(f"  ✗ {title}: {e}")
             continue
         if entry:
+            if publish:
+                publish_entry(entry)
             edits.insert(0, entry)
             new += 1
             print(f"  ✔ edit created: {entry['image']}")
             notify(entry)
-    if new:
+    if new and not publish:
         save(DATA_FILE, edits)
     print(f"done — {new} new edit(s)")
 
@@ -321,6 +324,33 @@ def make_edit(title, s=None, died=None):
     }
 
 
+# ------------------------------------------------------- publish to worker
+WORKER_URL = os.environ.get("WORKER_URL", "").rstrip("/")
+INGEST_TOKEN = os.environ.get("INGEST_TOKEN", "")
+
+
+def _api(method, path, data, ctype):
+    req = urllib.request.Request(
+        WORKER_URL + path, data=data, method=method,
+        headers={**HEADERS, "Authorization": "Bearer " + INGEST_TOKEN,
+                 "Content-Type": ctype})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.load(r)
+
+
+def api_slugs():
+    return {e["slug"] for e in get_json(WORKER_URL + "/api/edits")}
+
+
+def publish_entry(entry):
+    """Upload the image to R2 and the metadata to D1 via the worker API."""
+    with open(os.path.join(ROOT, "site", entry["image"]), "rb") as f:
+        _api("PUT", f"/api/images/{entry['slug']}", f.read(), "image/jpeg")
+    meta = {k: v for k, v in entry.items() if k != "image"}
+    _api("POST", "/api/edits", json.dumps(meta).encode(), "application/json")
+    print(f"  ↑ published {entry['slug']} -> {WORKER_URL}")
+
+
 def notify(entry):
     """Later feature: push a message when an edit is created.
 
@@ -455,10 +485,17 @@ if __name__ == "__main__":
     g.add_argument("--demo", action="store_true")
     g.add_argument("--regen", action="store_true",
                    help="rebuild all timeline images (after crop changes)")
+    g.add_argument("--publish", action="store_true",
+                   help="check list and upload new edits to the worker API "
+                        "(needs WORKER_URL + INGEST_TOKEN env vars)")
     a = p.parse_args()
 
     if a.demo:
         demo()
+    elif a.publish:
+        if not (WORKER_URL and INGEST_TOKEN):
+            sys.exit("--publish needs WORKER_URL and INGEST_TOKEN env vars")
+        check_list(publish=True)
     elif a.regen:
         regen()
     elif a.name:

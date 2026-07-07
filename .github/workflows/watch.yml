@@ -30,7 +30,14 @@ jobs:
       - name: check for new deaths
         env:
           WIKIMEDIA_TOKEN: ${{ secrets.WIKIMEDIA_TOKEN }}   # optional, raises rate limit
-        run: python watcher.py --once
+          WORKER_URL: ${{ secrets.WORKER_URL }}             # e.g. https://the-other-half.you.workers.dev
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+        run: |
+          if [ -n "$WORKER_URL" ]; then
+            python watcher.py --publish   # upload to the Cloudflare worker (D1 + R2)
+          else
+            python watcher.py --once      # legacy: commit into the repo
+          fi
 
       - name: commit new edits
         run: |

@@ -196,12 +196,14 @@ function render(data){
 }
 
 function refresh(first){
-  // no-store: never let the browser serve a stale edits.json
-  fetch("data/edits.json", {cache: "no-store"})
+  // worker API first (production); local edits.json as fallback (./run.sh)
+  fetch("/api/edits", {cache: "no-store"})
     .then(r => { if (!r.ok) throw 0; return r.json(); })
+    .catch(() => fetch("data/edits.json", {cache: "no-store"})
+      .then(r => { if (!r.ok) throw 0; return r.json(); }))
     .then(render)
     .catch(() => {
-      if (first) $("note").innerHTML = "couldn't load data/edits.json<br><br>" +
+      if (first) $("note").innerHTML = "couldn't load any edit data<br><br>" +
         "serve the site instead of opening the file:<br><br><code>./run.sh</code>";
     });
 }
