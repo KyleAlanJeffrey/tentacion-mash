@@ -1,7 +1,7 @@
 // Cloudflare config — Worker (site + API + cron) and generator Container.
 // Before connecting the repo in the dashboard:
 //   1. create a D1 database, paste its id below
-//   2. create an R2 bucket named "the-other-half-images"
+//   2. create an R2 bucket named "the-other-half-image"
 //   3. run schema.sql in the D1 console
 //   4. set SELF_URL below to your worker URL after the first deploy
 // Full steps in README.md.
@@ -11,23 +11,23 @@
   "compatibility_date": "2026-07-07",
   "assets": {
     "directory": "./site",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "the-other-half",
-      "database_id": "PASTE_YOUR_D1_DATABASE_ID_HERE"
-    }
+      "database_id": "18de5ba8-3912-4eb4-b9b0-03c2d0729953",
+    },
   ],
   "r2_buckets": [
     {
       "binding": "IMAGES",
-      "bucket_name": "the-other-half-images"
-    }
+      "bucket_name": "the-other-half-image",
+    },
   ],
   "triggers": {
-    "crons": ["*/15 * * * *"]
+    "crons": ["*/15 * * * *"],
   },
   "containers": [
     {
@@ -35,17 +35,17 @@
       "image": "./generator/Dockerfile",
       "image_build_context": ".",
       "max_instances": 1,
-      "instance_type": "basic"
-    }
+      "instance_type": "basic",
+    },
   ],
   "durable_objects": {
-    "bindings": [{ "name": "GENERATOR", "class_name": "Generator" }]
+    "bindings": [{ "name": "GENERATOR", "class_name": "Generator" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Generator"] }],
   "vars": {
     // your worker's public URL — the container publishes edits back to it
-    "SELF_URL": "https://the-other-half.YOUR-SUBDOMAIN.workers.dev"
-  }
+    "SELF_URL": "https://tentacion-mash.2rbf5f5gvj.workers.dev",
+  },
   // Secrets (Worker -> Settings -> Variables and Secrets):
   //   INGEST_TOKEN    — any long random string; auths the container's uploads
   //   WIKIMEDIA_TOKEN — optional, raises Wikimedia rate limits
