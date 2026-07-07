@@ -219,6 +219,36 @@ def media_candidates(title, limit=8):
     return out
 
 
+COMMONS_API = "https://commons.wikimedia.org/w/api.php"
+
+
+def commons_candidates(title, limit=14):
+    """Search Wikimedia Commons for photos of the person — usually far more
+    choice than the article itself. One call returns thumbs + originals.
+    Returns (thumb_url, full_url) pairs."""
+    out = []
+    for q in (f'"{title}" portrait', f'"{title}"'):
+        url = (f"{COMMONS_API}?action=query&generator=search"
+               f"&gsrsearch={urllib.parse.quote(q + ' filetype:bitmap')}"
+               f"&gsrnamespace=6&gsrlimit={limit}"
+               f"&prop=imageinfo&iiprop=url&iiurlwidth=640&format=json")
+        try:
+            data = get_json(url)
+        except Exception:
+            continue
+        for p in (data.get("query") or {}).get("pages", {}).values():
+            name = p.get("title", "")
+            if BAD_FILES.search(name) or not re.search(r"\.(jpe?g|png)$", name, re.I):
+                continue
+            ii = (p.get("imageinfo") or [{}])[0]
+            thumb, full = ii.get("thumburl"), ii.get("url")
+            if thumb and full and (thumb, full) not in out:
+                out.append((thumb, full))
+        if len(out) >= 6:   # first query was fruitful enough
+            break
+    return out
+
+
 def original_url(file_title):
     """Full-resolution URL for a File: title via the imageinfo API."""
     url = (f"{WIKI}/w/api.php?action=query&prop=imageinfo&iiprop=url"
@@ -228,20 +258,30 @@ def original_url(file_title):
 
 
 def pick_portrait(title, s):
-    """Pick the flattest head-on portrait: score the lead image and the other
-    article images by face frontality x size (splice.assess_portrait)."""
+    """Pick the best splice-half: score candidates from the article lead,
+    the article's other images, and a Wikimedia Commons search, by face
+    frontality x size x colorfulness (splice.assess_portrait).
+    Candidates are (score_url, full_url|None, file_title|None)."""
     from splice import assess_portrait
     lead = s.get("originalimage", {}).get("source")
-    cands = [(lead, None)] if lead else []
+    cands = [(lead, lead, None)] if lead else []
     try:
-        cands += media_candidates(title)
+        cands += [(thumb, None, ftitle) for thumb, ftitle in media_candidates(title)]
     except Exception as e:
         print(f"    (media list failed: {e})")
+    try:
+        cands += [(thumb, full, None) for thumb, full in commons_candidates(title)]
+    except Exception as e:
+        print(f"    (commons search failed: {e})")
 
     os.makedirs(ASSETS, exist_ok=True)
     tmp = os.path.join(ASSETS, "_candidate.jpg")
-    best, best_score = None, 0.0
-    for url, ftitle in cands[:9]:
+    seen, best, best_score = set(), None, 0.0
+    for cand in cands[:16]:
+        url = cand[0]
+        if url in seen:
+            continue
+        seen.add(url)
         try:
             download(url, tmp)
             score = assess_portrait(tmp)
@@ -249,12 +289,14 @@ def pick_portrait(title, s):
             continue
         print(f"    candidate {url.rsplit('/', 1)[-1][:48]}: {score:.3f}")
         if score > best_score:
-            best, best_score = (url, ftitle), score
+            best, best_score = cand, score
     if best is None:
         if lead:
-            print("    (no frontal face found anywhere — using lead image)")
+            print("    (no usable face found anywhere — using lead image)")
         return lead
-    url, ftitle = best
+    url, full, ftitle = best
+    if full:
+        return full
     if ftitle:  # media-list thumb — resolve the original file
         try:
             return original_url(ftitle)

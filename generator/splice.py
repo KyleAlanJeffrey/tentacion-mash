@@ -121,14 +121,28 @@ def _find_face(img: Image.Image):
     return (d["cx"], d["cy"], d["fh"]) if d else None
 
 
+def _colorfulness(img: Image.Image) -> float:
+    """Hasler-Süsstrunk colorfulness, 0..~100. B&W photos and faded paintings
+    score near 0 and splice poorly against XXX's color half."""
+    if cv2 is None:
+        return 40.0
+    a = np.asarray(img.resize((64, 64)), dtype=np.float32)
+    rg = a[..., 0] - a[..., 1]
+    yb = (a[..., 0] + a[..., 1]) / 2 - a[..., 2]
+    return float(math.hypot(rg.std(), yb.std()) +
+                 0.3 * math.hypot(abs(rg.mean()), abs(yb.mean())))
+
+
 def assess_portrait(path: str) -> float:
     """How suitable is this image as a splice half? 0 = unusable.
-    Wants a face that is frontal (flat, head-on) and reasonably large."""
+    Wants a face that is frontal (flat, head-on), reasonably large,
+    and in color."""
     img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
     d = _detect(img)
     if d is None or d["front"] < 0.5:
         return 0.0
-    return d["front"] * min(d["fh"] / img.size[1], 0.5)
+    color = 0.7 + 0.3 * min(1.0, _colorfulness(img) / 40.0)
+    return d["front"] * min(d["fh"] / img.size[1], 0.5) * color
 
 
 def sidecar_eyes(path: str):
