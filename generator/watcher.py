@@ -67,10 +67,12 @@ _last_request = 0.0
 
 
 def _request(url, timeout, data=None):
-    """Throttled fetch with backoff on 429/503 (honors Retry-After)."""
+    """Throttled fetch with backoff on 429/503 (honors Retry-After).
+    A 401 means WIKIMEDIA_TOKEN is invalid — auth is optional, so drop it
+    for the rest of the run instead of failing every request."""
     global _last_request
-    req = urllib.request.Request(url, data=data, headers=HEADERS)
     for attempt in range(4):
+        req = urllib.request.Request(url, data=data, headers=HEADERS)
         wait = _last_request + THROTTLE_SECONDS - time.time()
         if wait > 0:
             time.sleep(wait)
@@ -78,6 +80,11 @@ def _request(url, timeout, data=None):
         try:
             return urllib.request.urlopen(req, timeout=timeout)
         except urllib.error.HTTPError as e:
+            if e.code == 401 and "Authorization" in HEADERS:
+                print("    (WIKIMEDIA_TOKEN rejected (401) — continuing "
+                      "unauthenticated; fix or remove the token in .env)")
+                del HEADERS["Authorization"]
+                continue
             if e.code in (429, 503) and attempt < 3:
                 delay = int(e.headers.get("Retry-After") or 0) or 15 * (attempt + 1)
                 print(f"    (rate limited — waiting {delay}s)")
@@ -121,7 +128,11 @@ def query_deaths(titles, batch_size=250):
         with _request(SPARQL, 60, data=body) as r:
             data = json.load(r)
         for row in data["results"]["bindings"]:
-            dead[row["name"]["value"]] = row["death"]["value"][:10]
+            date = row["death"]["value"][:10]
+            # Wikidata "unknown value" death dates come back as genid URIs,
+            # and BCE dates as negative years — neither is spliceable
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", date):
+                dead[row["name"]["value"]] = date
     return dead
 
 
@@ -234,7 +245,8 @@ def commons_candidates(title, limit=14):
                f"&prop=imageinfo&iiprop=url&iiurlwidth=640&format=json")
         try:
             data = get_json(url)
-        except Exception:
+        except Exception as e:
+            print(f"    (commons search failed: {e})")
             continue
         for p in (data.get("query") or {}).get("pages", {}).values():
             name = p.get("title", "")
