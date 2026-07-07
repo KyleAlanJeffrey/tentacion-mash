@@ -2,3 +2,4 @@
 # One exact Wikipedia article title per line. Lines starting with # are ignored.
 # They appear above the timeline with a ghostly glow until the day comes;
 # then the generator replaces the ghost with the real edit automatically.
+Mitch McConnell
