@@ -30,7 +30,8 @@ timeline. Detection is automatic; the whole thing runs on Cloudflare.
 │                       static site, cron that wakes the container
 │
 └── site/               the web app (static, served by the worker)
-    ├── index.html      carousel timeline
+    ├── index.html      scroll-snap timeline
+    ├── deathwatch.txt  THE WATCHLIST — expected deaths, shown as ghosts
     ├── data/           (local mode only) edits.json
     └── edits/          (local mode only) generated images
 ```
@@ -114,6 +115,14 @@ Requires the Workers Paid plan (containers). In the Cloudflare dashboard:
 
 Every push redeploys worker, site, and container image — so tuning done
 locally ships automatically.
+
+## The watchlist
+
+`site/deathwatch.txt` — names you *expect* to lose (one Wikipedia title per
+line). They hover above the timeline with a ghostly glow; scroll UP from the
+newest death to see the future. Portraits load client-side from Wikipedia, and
+once someone on the watchlist actually dies, the pipeline replaces their ghost
+with the real edit automatically.
 
 ## Notes
 

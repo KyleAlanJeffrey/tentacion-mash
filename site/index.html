@@ -127,6 +127,61 @@ header h1 .half{color:var(--blood)}
   color:var(--hair);font-size:.9rem;
 }
 
+/* the watchlist — ghosts of the not-yet-dead */
+:root{--ghost:#b9cbd8}
+#watch{
+  min-height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:12vh 20px 10vh;position:relative;
+}
+#watch h2{
+  font-family:"UnifrakturMaguntia",serif;font-weight:400;
+  font-size:clamp(1.6rem,4.5vw,2.6rem);color:var(--ghost);
+  text-shadow:0 0 26px rgba(185,203,216,.45);
+}
+#watch .sub{
+  margin-top:1.2vh;font-family:"IBM Plex Mono",monospace;font-size:.64rem;
+  letter-spacing:.4em;text-transform:uppercase;color:var(--bone-dim);
+}
+#ghosts{
+  margin-top:5vh;display:grid;gap:clamp(18px,3vw,36px);
+  grid-template-columns:repeat(auto-fit,minmax(130px,160px));
+  justify-content:center;max-width:900px;width:100%;
+}
+.ghost{text-align:center}
+.ghost .gframe{
+  position:relative;animation:hover 5s ease-in-out infinite;
+}
+.ghost:nth-child(2n) .gframe{animation-delay:-2.5s}
+.ghost:nth-child(3n) .gframe{animation-duration:6.5s}
+@keyframes hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.ghost img{
+  display:block;width:100%;aspect-ratio:4/5;object-fit:cover;
+  filter:grayscale(1) brightness(1.12);opacity:.8;
+  border:1px solid rgba(185,203,216,.25);
+  box-shadow:0 0 22px rgba(185,203,216,.28),0 0 60px rgba(185,203,216,.12);
+  animation:seance 3.4s ease-in-out infinite;
+}
+.ghost:nth-child(2n) img{animation-delay:-1.7s}
+@keyframes seance{
+  0%,100%{box-shadow:0 0 22px rgba(185,203,216,.28),0 0 60px rgba(185,203,216,.12)}
+  50%{box-shadow:0 0 34px rgba(185,203,216,.5),0 0 90px rgba(185,203,216,.22)}
+}
+.ghost .gname{
+  margin-top:1em;font-style:italic;font-weight:600;font-size:1.05rem;
+  color:var(--ghost);line-height:1.15;
+}
+.ghost .soon{
+  margin-top:.5em;font-family:"IBM Plex Mono",monospace;font-size:.56rem;
+  letter-spacing:.3em;text-transform:uppercase;color:var(--bone-dim);
+  animation:throb 2.8s ease-in-out infinite;
+}
+#watch .descend{
+  position:absolute;bottom:3vh;left:50%;transform:translateX(-50%);
+  font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.4em;
+  text-transform:uppercase;color:var(--bone-dim);
+}
+
 /* new-death toast */
 #toast{
   position:fixed;top:70px;left:50%;transform:translate(-50%,-200%);z-index:50;
@@ -161,7 +216,7 @@ header h1 .half{color:var(--blood)}
 </aside>
 
 <button id="toast">✝ a new death — return to the top</button>
-<div id="hint" hidden>scroll ↓ into the past</div>
+<div id="hint" hidden>↑ the future · the past ↓</div>
 
 <main id="feed"><div class="note">summoning…</div></main>
 
@@ -174,7 +229,44 @@ const fmt = d => d.toLocaleDateString("en-US",
 const mid = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
 const daysSince = d => Math.round((mid(new Date()) - mid(d)) / DAY);
 
-let edits = [], io = null;
+let edits = [], ghosts = [], io = null;
+const slugify = t => t.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-+|-+$/g, "");
+
+// ---- the watchlist: still-living names, portraits fetched from Wikipedia
+const loadGhosts = fetch("deathwatch.txt", {cache: "no-store"})
+  .then(r => { if (!r.ok) throw 0; return r.text(); })
+  .then(txt => {
+    const names = txt.split("\n").map(s => s.trim())
+      .filter(s => s && !s.startsWith("#"));
+    return Promise.all(names.map(n =>
+      fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" +
+            encodeURIComponent(n.replaceAll(" ", "_")))
+        .then(r => { if (!r.ok) throw 0; return r.json(); })
+        .then(s => ({name: n, slug: slugify(n),
+                     img: s.thumbnail?.source || null}))
+        .catch(() => null)));
+  })
+  .then(list => (list || []).filter(g => g && g.img))
+  .catch(() => []);
+
+function watchHTML(){
+  const alive = ghosts.filter(g => !edits.some(e => e.slug === g.slug));
+  if (!alive.length) return "";
+  return `
+  <section id="watch" data-year="SOON">
+    <h2>The Watchlist</h2>
+    <div class="sub">expected · any day now</div>
+    <div id="ghosts">${alive.map(g => `
+      <div class="ghost">
+        <div class="gframe"><img src="${g.img}" alt="${g.name}" loading="lazy"></div>
+        <div class="gname">${g.name}</div>
+        <div class="soon">✝ soon</div>
+      </div>`).join("")}
+    </div>
+    <div class="descend">scroll ↓ back to the present</div>
+  </section>`;
+}
 
 function cardHTML(e, i){
   const died = diedDate(e);
@@ -197,7 +289,8 @@ function cardHTML(e, i){
 
 function render(){
   const feed = $("feed");
-  feed.innerHTML = edits.map(cardHTML).join("");
+  const watch = watchHTML();
+  feed.innerHTML = watch + edits.map(cardHTML).join("");
   $("rail").hidden = false;
   $("hint").hidden = false;
 
@@ -206,6 +299,13 @@ function render(){
     for (const x of entries){
       if (!x.isIntersecting) continue;
       x.target.classList.add("vis");
+      if (x.target.id === "watch"){
+        $("railYear").textContent = "SOON";
+        $("railPos").textContent = "the future";
+        $("railFill").style.height = "0%";
+        $("hint").hidden = true;
+        continue;
+      }
       const i = +x.target.dataset.i;
       $("railYear").textContent = x.target.dataset.year;
       $("railPos").textContent = (i + 1) + " / " + edits.length;
@@ -214,7 +314,11 @@ function render(){
       $("hint").hidden = i > 0;
     }
   }, {root: feed, threshold: 0.55});
-  feed.querySelectorAll(".card").forEach(el => io.observe(el));
+  feed.querySelectorAll(".card, #watch").forEach(el => io.observe(el));
+
+  // land on the present (newest death); the future waits above
+  const w = $("watch");
+  if (w) feed.scrollTop = w.offsetHeight;
 }
 
 function apply(data){
@@ -241,16 +345,16 @@ function apply(data){
 
 $("toast").onclick = () => {
   $("toast").classList.remove("show");
-  render();
-  $("feed").scrollTo({top: 0, behavior: "smooth"});
+  render();   // render lands on the newest death
 };
 
 function refresh(first){
-  fetch("/api/edits", {cache: "no-store"})
+  const data = fetch("/api/edits", {cache: "no-store"})
     .then(r => { if (!r.ok) throw 0; return r.json(); })
     .catch(() => fetch("data/edits.json", {cache: "no-store"})
-      .then(r => { if (!r.ok) throw 0; return r.json(); }))
-    .then(apply)
+      .then(r => { if (!r.ok) throw 0; return r.json(); }));
+  Promise.all([data, loadGhosts])
+    .then(([d, g]) => { ghosts = g; apply(d); })
     .catch(() => {
       if (first) $("feed").innerHTML = `<div class="note">couldn't load any
         edit data<br><br>serve the site instead of opening the file:<br><br>
@@ -260,17 +364,22 @@ function refresh(first){
 refresh(true);
 setInterval(refresh, 60_000);
 
-// keyboard: arrows step card by card
+// keyboard: arrows step section by section (watchlist included)
 document.addEventListener("keydown", ev => {
   const dir = ["ArrowDown","ArrowRight","PageDown"," "].includes(ev.key) ? 1
             : ["ArrowUp","ArrowLeft","PageUp"].includes(ev.key) ? -1 : 0;
   if (!dir) return;
   ev.preventDefault();
   const feed = $("feed");
-  const i = Math.max(0, Math.min(edits.length - 1,
-    Math.round(feed.scrollTop / innerHeight) + dir));
-  feed.querySelector(`.card[data-i="${i}"]`)
-    ?.scrollIntoView({behavior: "smooth"});
+  const sections = [...feed.querySelectorAll("#watch, .card")];
+  if (!sections.length) return;
+  let cur = 0, best = Infinity;
+  sections.forEach((s, k) => {
+    const d = Math.abs(s.offsetTop - feed.scrollTop);
+    if (d < best){ best = d; cur = k; }
+  });
+  sections[Math.max(0, Math.min(sections.length - 1, cur + dir))]
+    .scrollIntoView({behavior: "smooth"});
 });
 </script>
 </body>
