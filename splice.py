@@ -18,7 +18,10 @@ import urllib.request
 from PIL import Image, ImageOps
 
 CANVAS = 900          # output is CANVAS x CANVAS
-FACE_ZOOM = 2.4       # crop side = face height * FACE_ZOOM
+
+# Tunable via env, e.g.:  SPLICE_ZOOM=2.0 SPLICE_VOFFSET=0.5 ./run.sh regen
+FACE_ZOOM = float(os.environ.get("SPLICE_ZOOM", 2.4))     # crop side = face height * this
+FACE_VOFFSET = float(os.environ.get("SPLICE_VOFFSET", 0.46))  # face center at this fraction from crop top
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _YUNET_URL = ("https://github.com/opencv/opencv_zoo/raw/main/models/"
@@ -121,7 +124,7 @@ def _face_crop(img: Image.Image, size: int) -> Image.Image:
         cx, cy, fh = face
         side = min(int(fh * FACE_ZOOM), w, h)
         left = int(cx - side / 2)
-        top = int(cy - side * 0.46)   # face slightly above crop center
+        top = int(cy - side * FACE_VOFFSET)   # face slightly above crop center
     else:
         if cv2 is not None:
             print("  (no face detected — using geometric crop)")
