@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE OTHER HALF — an automatic memorial timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0a09;
+  --bone:#e8e2d6;
+  --bone-dim:#9a927f;
+  --blood:#a41f1f;
+  --hair:#2a2723;
+  --spine:#3a352e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--ink);
+  color:var(--bone);
+  font-family:"Cormorant Garamond",serif;
+  font-size:19px;
+  line-height:1.5;
+  overflow-x:hidden;
+}
+/* grain */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* header */
+header{
+  min-height:72vh;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;text-align:center;padding:9vh 24px 6vh;position:relative;
+}
+header::after{
+  content:"";position:absolute;left:50%;bottom:0;width:1px;height:14vh;
+  background:linear-gradient(to bottom,transparent,var(--spine));
+}
+.cross{
+  color:var(--blood);font-size:2rem;letter-spacing:.6em;margin-bottom:2.2rem;
+  animation:flicker 7s infinite;
+}
+h1{
+  font-family:"UnifrakturMaguntia",serif;font-weight:400;
+  font-size:clamp(3rem,10vw,7.5rem);line-height:.95;
+  animation:rise 1.2s cubic-bezier(.2,.8,.2,1) both;
+}
+h1 .half{color:var(--blood)}
+.sub{
+  margin-top:2rem;font-family:"IBM Plex Mono",monospace;font-size:.72rem;
+  letter-spacing:.35em;text-transform:uppercase;color:var(--bone-dim);
+  animation:rise 1.2s .25s cubic-bezier(.2,.8,.2,1) both;
+}
+.sub b{color:var(--bone);font-weight:500}
+.status{
+  margin-top:3.5rem;font-family:"IBM Plex Mono",monospace;font-size:.68rem;
+  letter-spacing:.15em;color:var(--bone-dim);
+  border:1px solid var(--hair);padding:.7em 1.4em;
+  animation:rise 1.2s .5s cubic-bezier(.2,.8,.2,1) both;
+}
+.status .dot{color:var(--blood);animation:pulse 2.4s infinite}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes flicker{0%,93%,97%,100%{opacity:1}95%{opacity:.4}}
+
+/* timeline */
+#timeline{position:relative;max-width:1060px;margin:0 auto;padding:4vh 24px 14vh}
+#timeline::before{
+  content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;
+  background:var(--spine);
+}
+.entry{
+  position:relative;display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(28px,6vw,72px);align-items:center;padding:7vh 0;
+  opacity:0;transform:translateY(40px);
+  transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1);
+}
+.entry.vis{opacity:1;transform:none}
+.entry::before{ /* node on the spine */
+  content:"†";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:var(--ink);color:var(--blood);padding:.35em 0;
+  font-size:1.05rem;line-height:1;z-index:2;
+}
+.pic{position:relative}
+.entry:nth-child(even) .pic{order:2}
+.pic img{
+  display:block;width:100%;filter:grayscale(.25) contrast(1.05);
+  border:1px solid var(--hair);
+  transition:filter .6s;
+}
+.pic:hover img{filter:grayscale(0) contrast(1.08)}
+.pic .frame{
+  position:absolute;inset:-10px;border:1px solid var(--hair);pointer-events:none;
+}
+.meta .date{
+  font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--blood);margin-bottom:1rem;
+}
+.meta h2{
+  font-family:"Cormorant Garamond",serif;font-weight:600;font-style:italic;
+  font-size:clamp(1.9rem,4vw,3rem);line-height:1.05;margin-bottom:.6rem;
+}
+.meta .desc{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--bone-dim);margin-bottom:1.3rem;
+}
+.meta .extract{color:var(--bone-dim);max-width:46ch;font-size:1rem}
+.meta a{
+  display:inline-block;margin-top:1.4rem;color:var(--bone);text-decoration:none;
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.25em;
+  text-transform:uppercase;border-bottom:1px solid var(--blood);padding-bottom:.3em;
+  transition:color .3s,border-color .3s;
+}
+.meta a:hover{color:var(--blood)}
+.entry:nth-child(odd) .meta{text-align:right}
+.entry:nth-child(odd) .meta .extract{margin-left:auto}
+
+.empty,.err{
+  text-align:center;padding:10vh 24px;color:var(--bone-dim);
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;letter-spacing:.15em;
+  line-height:2.2;
+}
+.empty code,.err code{color:var(--bone);border:1px solid var(--hair);padding:.2em .6em}
+
+footer{
+  text-align:center;padding:6vh 24px 8vh;color:var(--bone-dim);
+  font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.3em;
+  text-transform:uppercase;border-top:1px solid var(--hair);
+}
+@media(max-width:720px){
+  #timeline::before{left:12px}
+  .entry{grid-template-columns:1fr;gap:20px;padding:5vh 0 5vh 40px}
+  .entry::before{left:12px}
+  .entry:nth-child(even) .pic{order:0}
+  .entry:nth-child(odd) .meta{text-align:left}
+  .entry:nth-child(odd) .meta .extract{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="cross">†††</div>
+  <h1>THE <span class="half">OTHER</span> HALF</h1>
+  <p class="sub">one half is forever <b>XXXTENTACION</b> · the other half is whoever the news takes next</p>
+  <div class="status"><span class="dot">●</span>&nbsp; WATCHING WIKIPEDIA FOR NOTABLE DEATHS &nbsp;·&nbsp; <span id="count">—</span> EDITS</div>
+</header>
+
+<main id="timeline"></main>
+
+<footer>generated automatically · portraits via wikipedia · rest in peace, all of them</footer>
+
+<script>
+const fmt = iso => new Date(iso).toLocaleDateString("en-US",
+  {year:"numeric",month:"long",day:"numeric"});
+
+fetch("data/edits.json")
+  .then(r => { if(!r.ok) throw 0; return r.json(); })
+  .then(edits => {
+    document.getElementById("count").textContent = edits.length;
+    const tl = document.getElementById("timeline");
+    if(!edits.length){
+      tl.innerHTML = `<div class="empty">no edits yet — the famous are all still alive.<br>
+        run <code>python watcher.py --once</code> to check.</div>`;
+      return;
+    }
+    tl.innerHTML = edits.map(e => `
+      <article class="entry">
+        <div class="pic"><div class="frame"></div>
+          <img src="${e.image}" alt="XXXTentacion spliced with ${e.title}" loading="lazy">
+        </div>
+        <div class="meta">
+          <div class="date">${fmt(e.detected_at)}</div>
+          <h2>${e.title}</h2>
+          <div class="desc">${e.description || ""}</div>
+          <p class="extract">${(e.extract || "").slice(0, 220)}${(e.extract||"").length > 220 ? "…" : ""}</p>
+          ${e.wiki_url ? `<a href="${e.wiki_url}" target="_blank" rel="noopener">wikipedia →</a>` : ""}
+        </div>
+      </article>`).join("");
+
+    const io = new IntersectionObserver(es => es.forEach(x => {
+      if(x.isIntersecting){ x.target.classList.add("vis"); io.unobserve(x.target); }
+    }), {threshold:.15});
+    document.querySelectorAll(".entry").forEach(el => io.observe(el));
+  })
+  .catch(() => {
+    document.getElementById("timeline").innerHTML =
+      `<div class="err">couldn't load data/edits.json<br><br>
+       serve the site instead of opening the file directly:<br><br>
+       <code>cd site && python -m http.server 8000</code><br><br>
+       then visit <code>http://localhost:8000</code></div>`;
+  });
+</script>
+</body>
+</html>
