@@ -25,6 +25,7 @@ case "${1:-once}" in
   once)  "$PY" watcher.py --once; serve ;;
   name)  [ -n "$2" ] || { echo "usage: ./run.sh name \"Person Name\""; exit 1; }
          "$PY" watcher.py --name "$2"; serve ;;
+  regen) "$PY" watcher.py --regen; serve ;;
   watch) "$PY" watcher.py --poll 1800 &
          WATCHER=$!
          trap 'kill $WATCHER 2>/dev/null' EXIT

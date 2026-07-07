@@ -264,6 +264,21 @@ def check_once():
     print(f"done — {new} new edit(s)")
 
 
+def regen():
+    """Rebuild every image on the timeline (after crop/splice changes),
+    keeping the original death dates and detection times."""
+    ensure_base_image()
+    edits = load(DATA_FILE, [])
+    for old in edits:
+        entry = make_edit(old["title"], died=old.get("died"))
+        if entry:
+            entry["detected_at"] = old["detected_at"]
+            old.update(entry)
+            print(f"  ✔ regenerated {old['image']}")
+    save(DATA_FILE, edits)
+    print(f"done — {len(edits)} edit(s) rebuilt")
+
+
 def force_name(name):
     ensure_base_image()
     edits = load(DATA_FILE, [])
@@ -332,10 +347,14 @@ if __name__ == "__main__":
     g.add_argument("--poll", type=int, metavar="SECONDS")
     g.add_argument("--name")
     g.add_argument("--demo", action="store_true")
+    g.add_argument("--regen", action="store_true",
+                   help="rebuild all timeline images (after crop changes)")
     a = p.parse_args()
 
     if a.demo:
         demo()
+    elif a.regen:
+        regen()
     elif a.name:
         force_name(a.name)
     elif a.once:

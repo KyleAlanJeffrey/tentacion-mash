@@ -12,32 +12,77 @@ Usage:
     python splice.py path/to/right_portrait.jpg output.jpg
 Or import: make_splice(left_path, right_path, out_path)
 """
+import os
 import sys
+import urllib.request
 from PIL import Image, ImageOps
 
 CANVAS = 900          # output is CANVAS x CANVAS
 FACE_ZOOM = 2.4       # crop side = face height * FACE_ZOOM
 
+_DIR = os.path.dirname(os.path.abspath(__file__))
+_YUNET_URL = ("https://github.com/opencv/opencv_zoo/raw/main/models/"
+              "face_detection_yunet/face_detection_yunet_2023mar.onnx")
+_YUNET_PATH = os.path.join(_DIR, "assets", "yunet.onnx")
+_yunet = None  # None = not tried, False = unavailable
+
 try:
     import cv2
     import numpy as np
-    _CASCADE = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-except (ImportError, AttributeError):   # AttributeError: opencv>=5 dropped Haar
+    try:
+        _CASCADE = cv2.CascadeClassifier(
+            cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    except AttributeError:              # opencv>=5 dropped Haar
+        _CASCADE = None
+except ImportError:
     cv2 = None
+    _CASCADE = None
+
+
+def _get_yunet():
+    """YuNet DNN face detector — handles tilted, occluded, tattooed,
+    profile-ish faces that defeat the old Haar cascade. Model (~350 KB)
+    is downloaded once into assets/."""
+    global _yunet
+    if _yunet is None:
+        _yunet = False
+        if cv2 is not None and hasattr(cv2, "FaceDetectorYN"):
+            try:
+                if not os.path.exists(_YUNET_PATH):
+                    os.makedirs(os.path.dirname(_YUNET_PATH), exist_ok=True)
+                    urllib.request.urlretrieve(_YUNET_URL, _YUNET_PATH)
+                _yunet = cv2.FaceDetectorYN.create(_YUNET_PATH, "", (320, 320), 0.6)
+            except Exception as e:
+                print(f"  (yunet unavailable: {e} — using haar fallback)")
+    return _yunet or None
 
 
 def _find_face(img: Image.Image):
-    """Return (cx, cy, face_h) of the largest face, or None."""
+    """Return (cx, cy, face_h) of the largest face, or None.
+    Tries YuNet (robust), then Haar (frontal only)."""
     if cv2 is None:
         return None
-    gray = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2GRAY)
-    faces = _CASCADE.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5,
-                                      minSize=(gray.shape[1] // 10,) * 2)
-    if len(faces) == 0:
-        return None
-    x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-    return x + w / 2, y + h / 2, h
+    bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    h, w = bgr.shape[:2]
+
+    det = _get_yunet()
+    if det is not None:
+        scale = min(1.0, 1200 / max(w, h))   # downscale huge images for speed
+        small = cv2.resize(bgr, (round(w * scale), round(h * scale)))
+        det.setInputSize((small.shape[1], small.shape[0]))
+        _, faces = det.detect(small)
+        if faces is not None and len(faces):
+            x, y, fw, fh = (max(faces, key=lambda f: f[2] * f[3])[:4] / scale)
+            return x + fw / 2, y + fh / 2, fh
+
+    if _CASCADE is not None:
+        gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+        faces = _CASCADE.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5,
+                                          minSize=(w // 10,) * 2)
+        if len(faces):
+            x, y, fw, fh = max(faces, key=lambda f: f[2] * f[3])
+            return x + fw / 2, y + fh / 2, fh
+    return None
 
 
 def _face_crop(img: Image.Image, size: int) -> Image.Image:
@@ -53,6 +98,8 @@ def _face_crop(img: Image.Image, size: int) -> Image.Image:
         left = int(cx - side / 2)
         top = int(cy - side * 0.46)   # face slightly above crop center
     else:
+        if cv2 is not None:
+            print("  (no face detected — using geometric crop)")
         side = min(w, h)
         left = (w - side) // 2
         top = min(int(h * 0.08), h - side)
