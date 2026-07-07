@@ -1,63 +1,87 @@
 # THE OTHER HALF
 
 Auto-generates the classic half-and-half edit — left side forever XXXTentacion,
-right side whoever famous just died — and shows every edit on a timeline.
+right side whoever famous just died — and shows every edit on a carousel
+timeline. Detection is automatic; the whole thing runs on Cloudflare.
 
-## Quick start
+## Project structure
+
+```
+├── run.sh              local dev: generate edits + serve the site
+├── setup.sh            creates .venv and installs Python deps
+├── celebs.txt          THE LIST — one Wikipedia article title per line
+├── schema.sql          D1 table, run once in the dashboard console
+├── wrangler.jsonc      Cloudflare config (worker, container, D1, R2, cron)
+├── package.json        @cloudflare/containers dependency for the worker
+│
+├── generator/          Python image pipeline (runs locally or in the container)
+│   ├── watcher.py      detection: diffs celebs.txt against Wikidata deaths,
+│   │                   picks portraits, publishes edits
+│   ├── splice.py       the edit itself: eye-landmark alignment + splicing
+│   ├── server.py       tiny HTTP server the container runs; the worker cron
+│   │                   POSTs /generate to it
+│   ├── Dockerfile      container image (native Python + Pillow + OpenCV)
+│   ├── requirements.txt
+│   └── assets/         (gitignored) xxx.jpg base image, yunet.onnx model,
+│                       optional xxx.jpg.json manual eye coords
+│
+├── worker/
+│   └── index.js        Cloudflare Worker: JSON API (D1), images (R2),
+│                       static site, cron that wakes the container
+│
+└── site/               the web app (static, served by the worker)
+    ├── index.html      carousel timeline
+    ├── data/           (local mode only) edits.json
+    └── edits/          (local mode only) generated images
+```
+
+## Local dev
 
 ```bash
 ./run.sh demo        # offline demo with placeholder faces, serves at :8000
-./run.sh             # check for new famous deaths once, then serve
+./run.sh             # check the list for new deaths once, then serve
+./run.sh name "X Y"  # force an edit for anyone with a Wikipedia page
+./run.sh regen       # rebuild all images (after tuning), then serve
 ./run.sh watch       # serve + keep checking every 30 min
-./run.sh name "X Y"  # force an edit for one person, then serve
 ```
 
-`run.sh` creates a virtualenv (`.venv`) via `setup.sh` on first run and uses it
-for everything. To set up manually: `./setup.sh`.
+First run creates `.venv` automatically. Locally everything is file-based:
+images in `site/edits/`, data in `site/data/edits.json` — no Cloudflare needed.
 
-Real data (needs internet):
+### Tuning the splice
+
+Alignment is driven by eye landmarks: both faces are warped so their eyes sit
+on the same line, at the same spacing, with the midpoint on the seam.
 
 ```bash
-python watcher.py --once                      # check for new famous deaths now
-python watcher.py --name "Some Person"        # force an edit for anyone with a Wikipedia page
-python watcher.py --poll 1800                 # keep watching, check every 30 min
+SPLICE_EYELINE=0.42 SPLICE_EYEDIST=0.19 ./run.sh regen      # try values
+python generator/splice.py --mark generator/assets/xxx.jpg  # check eye detection
 ```
 
-Requires Python 3.9+. Dependencies live in `.venv` (just Pillow). No API keys.
+`--mark` writes `xxx.jpg.marked.jpg` with the detected eyes circled. If
+detection is off (tattoos confuse it), save corrected pixel coordinates as
+`generator/assets/xxx.jpg.json`:
+
+```json
+{"eyes": [[93, 105], [148, 106]]}
+```
+
+A sidecar `.json` next to any image always overrides detection.
 
 ## How detection works
 
-**Primary — the celebrity list.** `celebs.txt` holds Wikipedia article titles,
-one per line (~160 seeded, add your own). Each check sends one batched query to
-Wikidata asking "which of these people have a death date?" — cheap even for
-thousands of names. Everyone on the list who is dead but not yet on the
-timeline gets an edit, however long ago they died — the timeline itself is
-the record, so nothing is generated twice.
+`celebs.txt` holds Wikipedia article titles. Each check sends one batched
+Wikidata query — "which of these people have a death date (P570)?" — cheap
+even for thousands of names. Anyone dead but not yet on the timeline gets an
+edit (the timeline is the record, nothing generates twice). The best portrait
+is chosen by scanning the person's Wikipedia article images and scoring
+face frontality × size; date of death comes from Wikidata, not detection time.
 
-**Fallback — category polling.** If `celebs.txt` is missing, the watcher polls
-Wikipedia's "Deaths in <this month>" category (editors add people within
-minutes of a notable death) and filters by pageviews (`FAME_THRESHOLD`,
-default 1M/year).
+## The Cloudflare stack
 
-For each new death the watcher grabs the lead portrait from the Wikipedia
-REST summary API, splices it with the XXX base image (`splice.py`,
-face-centered via OpenCV), writes `site/edits/<slug>.jpg`, and prepends the
-entry to `site/data/edits.json`.
-
-State: the timeline itself (list mode), `seen.json` (category mode).
-
-## Messaging (the later feature)
-
-`notify()` in `watcher.py` is stubbed with the easiest option: [ntfy.sh](https://ntfy.sh).
-Pick a secret topic name, subscribe in the ntfy phone app, uncomment four
-lines — you'll get a push the moment an edit is generated. Twilio SMS or a
-Discord webhook drop into the same function.
-
-## Deploying — the Cloudflare stack
-
-**Worker** (serves site + API, cron-polls Wikidata) · **D1** (edit metadata) ·
-**R2** (splice images) · **GitHub Action** (Python image generation, dispatched
-by the cron, publishes back via the API).
+**Worker** (site + API + cron) · **D1** (metadata) · **R2** (images) ·
+**Container** (the generator, woken by the cron every 15 min; exits in ~2s
+when nobody died).
 
 ### API
 
@@ -70,42 +94,31 @@ PUT    /api/images/:slug    upload image         (Bearer INGEST_TOKEN)
 DELETE /api/edits/:slug     remove edit + image  (Bearer INGEST_TOKEN)
 ```
 
-All GETs are CORS-open — build anything on top.
+All GETs are CORS-open.
 
-### One-time wiring (dashboard only, ~10 minutes)
+### One-time wiring (dashboard only)
 
 Requires the Workers Paid plan (containers). In the Cloudflare dashboard:
 
 1. **Storage & Databases → D1 → Create** — name it `the-other-half`, copy its
    ID into `database_id` in `wrangler.jsonc` (commit + push).
-2. In the new database's **Console**, paste and run `schema.sql`.
+2. In the database's **Console**, paste and run `schema.sql`.
 3. **R2 → Create bucket** named `the-other-half-images`.
 4. **Workers & Pages → Create → Workers → Import a repository** — pick this
-   repo, deploy command `npx wrangler deploy` (default). Deploy. This also
-   builds and pushes the generator container image.
+   repo, deploy command `npx wrangler deploy` (default). This also builds and
+   pushes the container image.
 5. Worker → **Settings → Variables and Secrets**:
    - secret `INGEST_TOKEN` — any long random string (auths container uploads)
    - optional secret `WIKIMEDIA_TOKEN` — raises Wikimedia rate limits
-6. Put your worker URL (e.g. `https://the-other-half.you.workers.dev`) in
-   `SELF_URL` in `wrangler.jsonc`, commit + push (auto-redeploys).
+     ([free token](https://api.wikimedia.org/wiki/Special:AppManagement))
+6. Set `SELF_URL` in `wrangler.jsonc` to your worker URL, commit + push.
 
-### How it flows
-
-Worker cron (every 15 min) wakes the generator **Container** — native Python,
-Pillow, OpenCV, no serverless-runtime compromises. It diffs `celebs.txt`
-against Wikidata and the API, generates splices for anyone new, uploads image
-to R2 + metadata to D1 through the API, then the container sleeps. A no-death
-check costs ~2 seconds of billed container time.
-
-The GitHub Action remains as a manual backup generator (Actions tab → Run
-workflow; needs `WORKER_URL` + `INGEST_TOKEN` repo secrets).
-
-Local dev is unchanged: `./run.sh` serves everything from local files.
+Every push redeploys worker, site, and container image — so tuning done
+locally ships automatically.
 
 ## Notes
 
-- Crop is geometric, not face-detected. Wikipedia portraits are usually
-  head-and-shoulders so it lands well; for perfect eye-line alignment add a
-  face detector (e.g. mediapipe) in `_face_crop()`.
-- Portraits come from Wikipedia/Wikimedia; most are freely licensed, but check
-  before publishing publicly.
+- `notify()` in `generator/watcher.py` is a stub for the "message me when
+  someone dies" feature — ntfy.sh instructions inside.
+- Portraits come from Wikipedia/Wikimedia; most are freely licensed, but
+  check before publishing publicly.

@@ -35,14 +35,16 @@ import urllib.request
 
 from splice import make_splice, CANVAS
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.abspath(__file__))        # generator/
+REPO = os.path.dirname(ROOT)                              # repo root
 ASSETS = os.path.join(ROOT, "assets")
-SITE_EDITS = os.path.join(ROOT, "site", "edits")
-DATA_FILE = os.path.join(ROOT, "site", "data", "edits.json")
+SITE = os.path.join(REPO, "site")
+SITE_EDITS = os.path.join(SITE, "edits")
+DATA_FILE = os.path.join(SITE, "data", "edits.json")
 STATE_FILE = os.path.join(ROOT, "seen.json")
 XXX_IMG = os.path.join(ASSETS, "xxx.jpg")
 
-CELEBS_FILE = os.path.join(ROOT, "celebs.txt")
+CELEBS_FILE = os.path.join(REPO, "celebs.txt")
 
 # Wikimedia etiquette: identify yourself and don't hammer.
 HEADERS = {"User-Agent": "the-other-half/0.1 (kjeffrey@stout.ai; personal project)"}
@@ -344,7 +346,7 @@ def api_slugs():
 
 def publish_entry(entry):
     """Upload the image to R2 and the metadata to D1 via the worker API."""
-    with open(os.path.join(ROOT, "site", entry["image"]), "rb") as f:
+    with open(os.path.join(SITE, entry["image"]), "rb") as f:
         _api("PUT", f"/api/images/{entry['slug']}", f.read(), "image/jpeg")
     meta = {k: v for k, v in entry.items() if k != "image"}
     _api("POST", "/api/edits", json.dumps(meta).encode(), "application/json")

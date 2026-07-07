@@ -15,7 +15,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         p = subprocess.run(
-            ["python", "watcher.py", "--publish"],
+            ["python", "generator/watcher.py", "--publish"],
             capture_output=True, text=True, cwd="/app", timeout=60 * 20)
         body = (p.stdout + p.stderr).encode()
         self.send_response(200 if p.returncode == 0 else 500)

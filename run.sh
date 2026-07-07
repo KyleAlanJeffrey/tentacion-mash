@@ -24,12 +24,12 @@ serve() {
 }
 
 case "${1:-once}" in
-  demo)  "$PY" watcher.py --demo; serve ;;
-  once)  "$PY" watcher.py --once; serve ;;
+  demo)  "$PY" generator/watcher.py --demo; serve ;;
+  once)  "$PY" generator/watcher.py --once; serve ;;
   name)  [ -n "$2" ] || { echo "usage: ./run.sh name \"Person Name\""; exit 1; }
-         "$PY" watcher.py --name "$2"; serve ;;
-  regen) "$PY" watcher.py --regen; serve ;;
-  watch) "$PY" watcher.py --poll 1800 &
+         "$PY" generator/watcher.py --name "$2"; serve ;;
+  regen) "$PY" generator/watcher.py --regen; serve ;;
+  watch) "$PY" generator/watcher.py --poll 1800 &
          WATCHER=$!
          trap 'kill $WATCHER 2>/dev/null' EXIT
          serve ;;
