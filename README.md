@@ -25,28 +25,27 @@ python watcher.py --poll 1800                 # keep watching, check every 30 mi
 
 Requires Python 3.9+. Dependencies live in `.venv` (just Pillow). No API keys.
 
-## How detection works (the Wikipedia approach)
+## How detection works
 
-When any notable person dies, Wikipedia editors add their article to the
-category **"Deaths in July 2026"** (etc.) — usually within minutes to a few
-hours. The watcher polls that category sorted by *when pages were added*, so
-new members = new deaths. This beats Google Alerts because it's structured
-data (a name you can act on, not a headline you'd have to parse), it's free,
-and it has no signup.
+**Primary — the celebrity list.** `celebs.txt` holds Wikipedia article titles,
+one per line (~160 seeded, add your own). Each check sends one batched query to
+Wikidata asking "which of these people have a death date?" — cheap even for
+thousands of names. The first run baselines who's already dead (no edits);
+after that, anyone who flips alive→dead gets an edit. Deaths older than 60
+days are recorded but skipped, so adding an already-dead person later doesn't
+spam the timeline.
 
-For each new name the watcher:
+**Fallback — category polling.** If `celebs.txt` is missing, the watcher polls
+Wikipedia's "Deaths in <this month>" category (editors add people within
+minutes of a notable death) and filters by pageviews (`FAME_THRESHOLD`,
+default 1M/year).
 
-1. **Fame check** — sums their English Wikipedia pageviews over the last 12
-   months (Wikimedia pageviews API). Default bar: **1,000,000/year** — tune
-   `FAME_THRESHOLD` in `watcher.py`.
-2. **Portrait** — grabs the lead image from their article (REST summary API).
-3. **Splice** — `splice.py` square-crops both portraits (biased toward the
-   top, where faces sit), pastes XXX's left half + their right half, adds the
-   hairline seam. Output: `site/edits/<slug>.jpg`.
-4. **Timeline** — appends metadata to `site/data/edits.json`; the site renders
-   it newest-first.
+For each new death the watcher grabs the lead portrait from the Wikipedia
+REST summary API, splices it with the XXX base image (`splice.py`,
+face-centered via OpenCV), writes `site/edits/<slug>.jpg`, and prepends the
+entry to `site/data/edits.json`.
 
-State lives in `seen.json` so nobody is processed twice.
+State: `list_state.json` (list mode), `seen.json` (category mode).
 
 ## Messaging (the later feature)
 

@@ -1,0 +1,170 @@
+# One Wikipedia article title per line (exact title, disambiguation included).
+# Lines starting with # are ignored. Add as many as you want — checks are
+# batched, so thousands of names still cost a handful of requests.
+# Anyone already dead when you first run is baselined silently (no edit).
+
+# music
+Paul McCartney
+Ringo Starr
+Bob Dylan
+Mick Jagger
+Keith Richards
+Elton John
+Stevie Wonder
+Dolly Parton
+Willie Nelson
+Bruce Springsteen
+Billy Joel
+Madonna
+Cher
+Ozzy Osbourne
+Snoop Dogg
+Dr. Dre
+Eminem
+Jay-Z
+Kanye West
+Drake (musician)
+Kendrick Lamar
+Lil Wayne
+Nicki Minaj
+Beyoncé
+Rihanna
+Taylor Swift
+Ariana Grande
+Justin Bieber
+Billie Eilish
+The Weeknd
+Ed Sheeran
+Adele
+Lady Gaga
+Bruno Mars
+Post Malone
+Travis Scott
+Bad Bunny
+Shakira
+Jennifer Lopez
+Mariah Carey
+Celine Dion
+Sting (musician)
+Paul Simon
+Ice Cube
+50 Cent
+
+# film & tv
+Tom Cruise
+Tom Hanks
+Robert De Niro
+Al Pacino
+Jack Nicholson
+Clint Eastwood
+Harrison Ford
+Arnold Schwarzenegger
+Sylvester Stallone
+Denzel Washington
+Morgan Freeman
+Samuel L. Jackson
+Anthony Hopkins
+Ian McKellen
+Patrick Stewart
+Leonardo DiCaprio
+Brad Pitt
+Johnny Depp
+Keanu Reeves
+Will Smith
+Dwayne Johnson
+Ryan Reynolds
+Robert Downey Jr.
+Jim Carrey
+Adam Sandler
+Eddie Murphy
+Meryl Streep
+Julia Roberts
+Angelina Jolie
+Nicole Kidman
+Sandra Bullock
+Jennifer Lawrence
+Scarlett Johansson
+Zendaya
+Timothée Chalamet
+Mel Brooks
+Dick Van Dyke
+William Shatner
+Michael Caine
+Judi Dench
+Helen Mirren
+Steven Spielberg
+Martin Scorsese
+Quentin Tarantino
+Oprah Winfrey
+Ellen DeGeneres
+David Letterman
+Conan O'Brien
+Jon Stewart
+Larry David
+Jerry Seinfeld
+Dave Chappelle
+
+# sport
+Lionel Messi
+Cristiano Ronaldo
+Neymar
+Kylian Mbappé
+LeBron James
+Michael Jordan
+Stephen Curry
+Kevin Durant
+Tiger Woods
+Serena Williams
+Venus Williams
+Roger Federer
+Rafael Nadal
+Novak Djokovic
+Tom Brady
+Mike Tyson
+Floyd Mayweather Jr.
+Usain Bolt
+Simone Biles
+Lewis Hamilton
+Max Verstappen
+Shaquille O'Neal
+Magic Johnson
+Kareem Abdul-Jabbar
+Wayne Gretzky
+
+# public figures
+Donald Trump
+Barack Obama
+Joe Biden
+Bill Clinton
+Hillary Clinton
+George W. Bush
+Vladimir Putin
+Xi Jinping
+Narendra Modi
+Charles III
+William, Prince of Wales
+Prince Harry, Duke of Sussex
+14th Dalai Lama
+Elon Musk
+Bill Gates
+Mark Zuckerberg
+Jeff Bezos
+Warren Buffett
+Tim Cook
+Sam Altman
+David Attenborough
+Noam Chomsky
+Jane Fonda
+Ralph Nader
+Bernie Sanders
+Mitch McConnell
+Nancy Pelosi
+Kim Kardashian
+Kylie Jenner
+Paris Hilton
+MrBeast
+PewDiePie
+Joe Rogan
+Howard Stern
+Martha Stewart
+Buzz Aldrin

@@ -1,1 +1,6 @@
-.venv
+.venv/
+__pycache__/
+*.pyc
+assets/
+seen.json
+list_state.json

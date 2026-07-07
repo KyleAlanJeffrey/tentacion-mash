@@ -1,15 +1,22 @@
-"""watcher.py — detect famous deaths on Wikipedia and generate splice edits.
+"""watcher.py — detect celebrity deaths and generate splice edits.
 
-How it works (all free, no API keys):
-1. Poll the Wikipedia category "Deaths in <current month> <year>". Editors add
-   people to it within minutes-to-hours of a notable death, so recently *added*
-   members = recently deceased.
-2. Fame filter: sum the person's Wikipedia pageviews over the last 12 months
-   via the Wikimedia pageviews API. Default bar: 1,000,000 views/year.
-3. Fetch their lead portrait from the Wikipedia REST summary API.
-4. Splice with the XXXTentacion base image (downloaded once to assets/xxx.jpg).
-5. Append to site/data/edits.json and drop the image in site/edits/.
-6. Optional: send a push notification (see notify()).
+Detection (all free, no API keys):
+
+PRIMARY — the celebrity list. Put Wikipedia article titles in celebs.txt (one
+per line). Each check, ONE batched Wikidata query asks "which of these people
+have a death date?" — cheap even for thousands of names. The first run records
+who on the list is already dead (baseline, no edits); after that, anyone who
+flips from alive to dead gets an edit.
+
+FALLBACK — if celebs.txt doesn't exist, poll the Wikipedia category
+"Deaths in <current month>" and filter by pageviews (FAME_THRESHOLD).
+This catches famous people you forgot to list.
+
+Then for each new death:
+1. Fetch their lead portrait from the Wikipedia REST summary API.
+2. Splice with the XXXTentacion base image (downloaded once to assets/xxx.jpg).
+3. Append to site/data/edits.json and drop the image in site/edits/.
+4. Optional: send a push notification (see notify()).
 
 Usage:
     python watcher.py --once            # single check
@@ -36,9 +43,14 @@ DATA_FILE = os.path.join(ROOT, "site", "data", "edits.json")
 STATE_FILE = os.path.join(ROOT, "seen.json")
 XXX_IMG = os.path.join(ASSETS, "xxx.jpg")
 
+CELEBS_FILE = os.path.join(ROOT, "celebs.txt")
+LIST_STATE = os.path.join(ROOT, "list_state.json")
+
 HEADERS = {"User-Agent": "death-splice-prototype/0.1 (personal project)"}
-FAME_THRESHOLD = 1_000_000          # pageviews in the last 12 months
+FAME_THRESHOLD = 1_000_000          # pageviews in the last 12 months (fallback mode)
+MAX_DEATH_AGE_DAYS = 60             # ignore deaths older than this (stale list adds)
 WIKI = "https://en.wikipedia.org"
+SPARQL = "https://query.wikidata.org/sparql"
 SKIP_TITLES = re.compile(r"^(List of|Deaths in|Category:|Template:)", re.I)
 
 
@@ -54,7 +66,71 @@ def download(url, path):
         f.write(r.read())
 
 
-# ---------------------------------------------------------------- detection
+# ------------------------------------------------------- list-based detection
+def load_celebs():
+    with open(CELEBS_FILE) as f:
+        names = [ln.strip() for ln in f]
+    return [n for n in names if n and not n.startswith("#")]
+
+
+def query_deaths(titles, batch_size=250):
+    """One batched Wikidata query per 250 names: which of these English
+    Wikipedia articles are about people with a death date (P570)?
+    Returns {title: 'YYYY-MM-DD'}. Absent = alive (or title not found)."""
+    dead = {}
+    for i in range(0, len(titles), batch_size):
+        batch = titles[i:i + batch_size]
+        values = " ".join('"%s"@en' % t.replace('"', '\\"') for t in batch)
+        q = """SELECT ?name ?death WHERE {
+                 VALUES ?name { %s }
+                 ?article schema:about ?p ;
+                          schema:isPartOf <https://en.wikipedia.org/> ;
+                          schema:name ?name .
+                 ?p wdt:P570 ?death . }""" % values
+        body = urllib.parse.urlencode({"query": q, "format": "json"}).encode()
+        req = urllib.request.Request(SPARQL, data=body, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.load(r)
+        for row in data["results"]["bindings"]:
+            dead[row["name"]["value"]] = row["death"]["value"][:10]
+    return dead
+
+
+def check_list():
+    """Primary mode: diff the celebrity list against Wikidata death dates.
+    Any unseen death within MAX_DEATH_AGE_DAYS generates an edit — including
+    on the first run. Older deaths are recorded without an edit."""
+    celebs = load_celebs()
+    print(f"checking {len(celebs)} names against Wikidata...")
+    dead = query_deaths(celebs)
+    state = load(LIST_STATE, {"dead": {}})
+
+    edits = load(DATA_FILE, [])
+    new = 0
+    for title, death_date in dead.items():
+        if title in state["dead"]:
+            continue
+        age = (dt.date.today() - dt.date.fromisoformat(death_date)).days
+        if age > MAX_DEATH_AGE_DAYS:
+            print(f"  {title}: died {death_date}, >"
+                  f"{MAX_DEATH_AGE_DAYS} days ago — recording only")
+            continue
+        print(f"  {title}: DIED {death_date}")
+        ensure_base_image()
+        entry = make_edit(title, died=death_date)
+        if entry:
+            edits.insert(0, entry)
+            new += 1
+            print(f"  ✔ edit created: {entry['image']}")
+            notify(entry)
+    state["dead"] = dead
+    save(LIST_STATE, state)
+    if new:
+        save(DATA_FILE, edits)
+    print(f"done — {new} new edit(s)")
+
+
+# ------------------------------------------- category detection (fallback)
 def recent_death_titles(limit=50):
     """Titles most recently added to this month's deaths category."""
     now = dt.date.today()
@@ -114,10 +190,16 @@ def slugify(title):
     return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
 
 
-def make_edit(title, s=None):
+def make_edit(title, s=None, died=None):
     """Generate the splice + metadata entry for one person. Returns entry or None."""
     s = s or summary(title)
+    if died is None:  # look up the real date of death (Wikidata P570)
+        try:
+            died = query_deaths([title]).get(title)
+        except Exception:
+            died = None
     if s.get("type") != "standard":
+        print(f"  {title}: not a normal article page, skipping")
         return None
     img = s.get("originalimage", {}).get("source")
     if not img:
@@ -142,6 +224,7 @@ def make_edit(title, s=None):
         "extract": s.get("extract", ""),
         "wiki_url": s.get("content_urls", {}).get("desktop", {}).get("page", ""),
         "image": f"edits/{slug}.jpg",
+        "died": died,  # date of death from Wikidata (P570), YYYY-MM-DD or null
         "detected_at": dt.datetime.now(dt.timezone.utc).isoformat(),
     }
 
@@ -161,6 +244,10 @@ def notify(entry):
 
 
 def check_once():
+    if os.path.exists(CELEBS_FILE):
+        check_list()
+        return
+    print("no celebs.txt — falling back to category polling")
     ensure_base_image()
     seen = load(STATE_FILE, [])
     edits = load(DATA_FILE, [])
@@ -239,6 +326,7 @@ def demo():
                        "`python watcher.py --once` for real data.",
             "wiki_url": "https://en.wikipedia.org/wiki/Deaths_in_2026",
             "image": f"edits/{slug}.jpg",
+            "died": (dt.date.today() - dt.timedelta(days=3 * i)).isoformat(),
             "detected_at": (dt.datetime.now(dt.timezone.utc)
                             - dt.timedelta(days=3 * i)).isoformat(),
             "pageviews_last_year": 2_500_000,

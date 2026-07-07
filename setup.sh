@@ -10,6 +10,6 @@ fi
 
 [ -x .venv/bin/python ] || python3 -m venv .venv
 
-.venv/bin/pip install --quiet pillow
+.venv/bin/pip install --quiet pillow "opencv-python-headless<5" "numpy<3"
 
 echo "✔ .venv ready — use ./run.sh"
