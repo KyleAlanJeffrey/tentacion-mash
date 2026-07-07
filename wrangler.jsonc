@@ -42,6 +42,9 @@
     "bindings": [{ "name": "GENERATOR", "class_name": "Generator" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Generator"] }],
+  "observability": {
+    "enabled": true
+  },
   "vars": {
     // your worker's public URL — the container publishes edits back to it
     "SELF_URL": "https://tentacion-mash.2rbf5f5gvj.workers.dev",
