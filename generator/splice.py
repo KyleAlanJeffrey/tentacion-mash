@@ -42,6 +42,19 @@ EYE_DIST = float(os.environ.get("SPLICE_EYEDIST", 0.17))  # inter-eye dist, frac
 FACE_ZOOM = float(os.environ.get("SPLICE_ZOOM", 2.4))
 FACE_VOFFSET = float(os.environ.get("SPLICE_VOFFSET", 0.46))
 
+# Canonical 5-point face template (ArcFace proportions, 112x112 space).
+# Order matches YuNet: subject-right eye, subject-left eye, nose tip,
+# right mouth corner, left mouth corner. Aligning every face to these fixed
+# proportions is what makes the eyes, nose, mouth, chin AND head size line up
+# across the seam — not just the eyes.
+_ARCFACE = [
+    (38.2946, 51.6963),
+    (73.5318, 51.5014),
+    (56.0252, 71.7366),
+    (41.5493, 92.3655),
+    (70.7299, 92.2041),
+]
+
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _YUNET_URL = ("https://github.com/opencv/opencv_zoo/raw/main/models/"
               "face_detection_yunet/face_detection_yunet_2023mar.onnx")
@@ -59,6 +72,49 @@ try:
 except ImportError:
     cv2 = None
     _CASCADE = None
+
+
+_TEMPLATE = None  # cached canonical 5-point template in canvas coords
+
+
+def _similarity(src, dst):
+    """Least-squares similarity transform (uniform scale + rotation +
+    translation, no shear/reflection) mapping src points onto dst points.
+    Umeyama 1991 — the standard for landmark-based face alignment. Works with
+    2 points (exact) or 5 (over-determined -> best fit). Returns a 2x3 matrix."""
+    src = np.asarray(src, np.float64)
+    dst = np.asarray(dst, np.float64)
+    n = src.shape[0]
+    src_mean, dst_mean = src.mean(0), dst.mean(0)
+    sc, dc = src - src_mean, dst - dst_mean
+    cov = (dc.T @ sc) / n
+    U, S, Vt = np.linalg.svd(cov)
+    D = np.eye(2)
+    if np.linalg.det(U) * np.linalg.det(Vt) < 0:
+        D[1, 1] = -1                       # forbid reflections
+    R = U @ D @ Vt
+    var = (sc ** 2).sum() / n
+    scale = float((S * np.diag(D)).sum() / var) if var else 1.0
+    M = np.zeros((2, 3))
+    M[:2, :2] = scale * R
+    M[:2, 2] = dst_mean - scale * R @ src_mean
+    return M
+
+
+def _template():
+    """The 5-point template placed into the output canvas: eye midpoint on
+    EYE_LINE, inter-eye = EYE_DIST, nose/mouth/chin following ArcFace ratios."""
+    global _TEMPLATE
+    if _TEMPLATE is None:
+        eye_targets = [
+            (CANVAS / 2 - EYE_DIST * CANVAS / 2, EYE_LINE * CANVAS),
+            (CANVAS / 2 + EYE_DIST * CANVAS / 2, EYE_LINE * CANVAS),
+        ]
+        # scale/place the whole ArcFace template by its two eye points
+        M = _similarity(_ARCFACE[:2], eye_targets)
+        arc = np.array(_ARCFACE, np.float64)
+        _TEMPLATE = arc @ M[:, :2].T + M[:, 2]
+    return _TEMPLATE
 
 
 def _get_yunet():
@@ -95,7 +151,8 @@ def _detect(img: Image.Image):
         _, faces = det.detect(small)
         if faces is not None and len(faces):
             f = max(faces, key=lambda r: r[2] * r[3]) / scale
-            x, y, fw, fh, rex, rey, lex, ley, nx, ny = f[:10]
+            x, y, fw, fh = f[:4]
+            rex, rey, lex, ley, nx, ny, rmx, rmy, lmx, lmy = f[4:14]
             eye_d = math.hypot(rex - lex, rey - ley) or 1.0
             yaw = abs(nx - (rex + lex) / 2) / eye_d
             roll = abs(rey - ley) / eye_d
@@ -103,6 +160,9 @@ def _detect(img: Image.Image):
                 "cx": x + fw / 2, "cy": y + fh / 2, "fh": fh,
                 "front": max(0.0, 1.0 - 2.0 * yaw - roll),
                 "eyes": ((rex, rey), (lex, ley)),
+                # full 5-point landmark set for similarity alignment
+                "lmarks": ((rex, rey), (lex, ley), (nx, ny),
+                           (rmx, rmy), (lmx, lmy)),
             }
 
     if _CASCADE is not None:
@@ -145,14 +205,20 @@ def assess_portrait(path: str) -> float:
     return d["front"] * min(d["fh"] / img.size[1], 0.5) * color
 
 
-def sidecar_eyes(path: str):
-    """Manual eye coords from '<image>.json' — overrides detection."""
+def sidecar_landmarks(path: str):
+    """Manual landmarks from '<image>.json' — overrides detection. Accepts
+    either the full 5-point set (best) or just the eyes:
+
+        {"landmarks": [[rex,rey],[lex,ley],[nx,ny],[rmx,rmy],[lmx,lmy]]}
+        {"eyes": [[x1,y1],[x2,y2]]}
+    """
     sc = path + ".json"
-    if os.path.exists(sc):
-        with open(sc) as f:
-            e = json.load(f)["eyes"]
-        return ((e[0][0], e[0][1]), (e[1][0], e[1][1]))
-    return None
+    if not os.path.exists(sc):
+        return None
+    with open(sc) as f:
+        data = json.load(f)
+    pts = data.get("landmarks") or data.get("eyes")
+    return tuple((p[0], p[1]) for p in pts) if pts else None
 
 
 def _face_crop(img: Image.Image, size: int) -> Image.Image:
@@ -177,32 +243,38 @@ def _face_crop(img: Image.Image, size: int) -> Image.Image:
         (size, size), Image.LANCZOS)
 
 
-def _align(img: Image.Image, manual_eyes=None) -> Image.Image:
-    """Similarity-warp so the eyes land on the canonical geometry:
-    eye midpoint at (CANVAS/2, EYE_LINE*CANVAS), inter-eye = EYE_DIST*CANVAS,
-    eye line horizontal. Falls back to _face_crop without eye landmarks."""
+def _align(img: Image.Image, manual=None) -> Image.Image:
+    """Similarity-warp the face onto the canonical 5-point template so eyes,
+    nose, mouth, chin and head size all land in the same place — the whole
+    face is zoomed/rotated to fit, not just the eye line. Prefers the full
+    5-point landmark set; falls back to eyes only, then a geometric crop."""
     img = ImageOps.exif_transpose(img).convert("RGB")
-    eyes = manual_eyes
-    if eyes is None:
+
+    lmarks = eyes = None
+    if manual is not None:
+        if len(manual) >= 5:
+            lmarks = manual
+        else:
+            eyes = manual
+    else:
         d = _detect(img)
-        eyes = d["eyes"] if d else None
-    if eyes is None or cv2 is None:
-        if cv2 is not None:
-            print("  (no eye landmarks — geometric crop; see splice.py --mark)")
+        if d:
+            lmarks, eyes = d.get("lmarks"), d["eyes"]
+
+    if cv2 is None:
         return _face_crop(img, CANVAS)
 
-    (x1, y1), (x2, y2) = sorted(eyes, key=lambda p: p[0])  # image-left first
-    dist = math.hypot(x2 - x1, y2 - y1)
-    if dist < 8:
+    if lmarks is not None:
+        M = _similarity(lmarks, _template())          # full-face fit
+    elif eyes is not None:
+        (x1, y1), (x2, y2) = sorted(eyes, key=lambda p: p[0])
+        if math.hypot(x2 - x1, y2 - y1) < 8:
+            return _face_crop(img, CANVAS)
+        M = _similarity(((x1, y1), (x2, y2)), _template()[:2])  # eyes only
+    else:
+        print("  (no landmarks — geometric crop; see splice.py --mark)")
         return _face_crop(img, CANVAS)
 
-    angle = math.degrees(math.atan2(y2 - y1, x2 - x1))  # roll to remove
-    scale = (EYE_DIST * CANVAS) / dist
-    mid = ((x1 + x2) / 2, (y1 + y2) / 2)
-
-    M = cv2.getRotationMatrix2D(mid, angle, scale)
-    M[0, 2] += CANVAS / 2 - mid[0]
-    M[1, 2] += EYE_LINE * CANVAS - mid[1]
     arr = cv2.warpAffine(np.array(img), M, (CANVAS, CANVAS),
                          flags=cv2.INTER_LANCZOS4,
                          borderMode=cv2.BORDER_REPLICATE)
@@ -210,8 +282,8 @@ def _align(img: Image.Image, manual_eyes=None) -> Image.Image:
 
 
 def make_splice(left_path: str, right_path: str, out_path: str) -> str:
-    left = _align(Image.open(left_path), sidecar_eyes(left_path))
-    right = _align(Image.open(right_path), sidecar_eyes(right_path))
+    left = _align(Image.open(left_path), sidecar_landmarks(left_path))
+    right = _align(Image.open(right_path), sidecar_landmarks(right_path))
     half = CANVAS // 2
 
     canvas = Image.new("RGB", (CANVAS, CANVAS))
@@ -242,22 +314,25 @@ def mark(path: str):
               f' > {path}.json')
         return
     r = max(3, int(d["fh"] * 0.04))
-    if d["eyes"]:
-        for (x, y) in d["eyes"]:
-            dr.ellipse((x - r, y - r, x + r, y + r), outline=(255, 0, 0), width=3)
+    lmarks = d.get("lmarks")
+    if lmarks:
+        # eyes red, nose green, mouth corners blue
+        colors = [(255, 0, 0), (255, 0, 0), (0, 220, 0), (0, 160, 255), (0, 160, 255)]
+        for (x, y), c in zip(lmarks, colors):
+            dr.ellipse((x - r, y - r, x + r, y + r), outline=c, width=3)
     dr.rectangle((d["cx"] - d["fh"] / 2, d["cy"] - d["fh"] / 2,
                   d["cx"] + d["fh"] / 2, d["cy"] + d["fh"] / 2),
                  outline=(255, 200, 0), width=2)
     img.save(out, quality=92)
     print(f"marked -> {out}")
-    if d["eyes"]:
-        e = [[round(x), round(y)] for x, y in d["eyes"]]
-        print(f"detected eyes: {e}")
+    if lmarks:
+        pts = [[round(x), round(y)] for x, y in lmarks]
+        print(f"detected landmarks (rEye,lEye,nose,rMouth,lMouth): {pts}")
         print(f"if wrong, correct and save as {path}.json:")
-        print(json.dumps({"eyes": e}))
+        print(json.dumps({"landmarks": pts}))
     else:
-        print(f"no eye landmarks (haar) — mark manually and save {path}.json:")
-        print('{"eyes": [[x1, y1], [x2, y2]]}')
+        print(f"no landmarks (haar) — mark manually and save {path}.json:")
+        print('{"landmarks": [[rex,rey],[lex,ley],[nx,ny],[rmx,rmy],[lmx,lmy]]}')
 
 
 if __name__ == "__main__":

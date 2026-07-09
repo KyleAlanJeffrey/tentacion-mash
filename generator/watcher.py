@@ -507,7 +507,9 @@ def demo():
 
     os.makedirs(ASSETS, exist_ok=True)
     os.makedirs(SITE_EDITS, exist_ok=True)
-    fake_portrait(XXX_IMG, "XXX (placeholder)", (40, 40, 90))
+    # never clobber a real base image — only stub one in if none exists
+    if not os.path.exists(XXX_IMG):
+        fake_portrait(XXX_IMG, "XXX (placeholder)", (40, 40, 90))
     people = [
         ("Demo Person One", "musician (placeholder)", (120, 60, 40)),
         ("Demo Person Two", "actor (placeholder)", (50, 90, 55)),
