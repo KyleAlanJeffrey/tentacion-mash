@@ -19,3 +19,18 @@ $ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   letter-spacing: $tracking;
   text-transform: uppercase;
 }
+
+// skeleton shimmer that holds an image's place until it decodes
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@mixin skeleton {
+  background:
+    linear-gradient(100deg,
+      $hair 20%, rgba($bone, 0.08) 40%, $hair 60%)
+    $hair;
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}

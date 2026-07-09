@@ -17,13 +17,20 @@ export default function App() {
   const feedRef = useRef<HTMLElement | null>(null);
 
   const apply = useCallback((data: Edit[]) => {
-    data.sort((a, b) => diedDate(b).getTime() - diedDate(a).getTime());
+    // newest first, with a stable tie-break so data[0] can't flip between
+    // fetches (which would falsely re-fire the "new death" toast)
+    data.sort((a, b) =>
+      diedDate(b).getTime() - diedDate(a).getTime() ||
+      b.detected_at.localeCompare(a.detected_at) ||
+      a.slug.localeCompare(b.slug));
     setEdits((cur) => {
       const changed = !cur || data.length !== cur.length ||
         (data[0] && cur[0] && data[0].slug !== cur[0].slug);
       if (!changed) return cur;
-      const browsing = !!cur?.length &&
-        (feedRef.current?.scrollTop ?? 0) > window.innerHeight / 2;
+      const feed = feedRef.current;
+      const browsing = !!cur?.length && !!feed &&
+        (feed.scrollLeft > window.innerWidth / 2 ||
+         feed.scrollTop > window.innerHeight / 2);
       if (browsing) {                 // don't yank the page mid-scroll
         pending.current = data;
         setToast(true);

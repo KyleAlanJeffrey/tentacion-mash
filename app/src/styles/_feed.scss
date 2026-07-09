@@ -1,40 +1,61 @@
 @use "vars" as *;
 
+// Desktop: a horizontal timeline — the future on the left, the past
+// stretching right. Mobile: vertical, future above. Free scrolling —
+// no snapping; the rail follows whatever's nearest the center.
 #feed {
   height: 100dvh;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 }
 
 .card {
-  min-height: 100dvh;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  flex: 0 0 auto;
+  width: min(58vh, 86vw);
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 9vh 20px 7vh;
+  padding: 10vh clamp(16px, 2.5vw, 44px) 8vh;
   content-visibility: auto;
-  contain-intrinsic-size: 100vh;
+  contain-intrinsic-size: 58vh 100vh;
   position: relative;
 
   .frame {
     position: relative;
-    width: min(52vh, 82vw);
+    width: 100%;
+    aspect-ratio: 1 / 1;      // reserve the square so nothing reflows on load
     opacity: 0;
     transform: translateY(34px) scale(0.97);
     transition: opacity 0.7s $ease, transform 0.7s $ease;
 
+    // skeleton shimmer until the image decodes
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      @include skeleton;
+      border: 1px solid $hair;
+      transition: opacity 0.6s $ease;
+    }
+    &.loaded::before { opacity: 0; }
+
     img {
       display: block;
       width: 100%;
+      height: 100%;
+      object-fit: cover;
       border: 1px solid $hair;
       filter: grayscale(0.2) contrast(1.05);
-      transition: filter 0.5s;
+      opacity: 0;
+      transition: opacity 0.6s $ease, filter 0.5s;
     }
+    &.loaded img { opacity: 1; }
     &:hover img { filter: grayscale(0) contrast(1.08); }
 
     &::after {
@@ -65,7 +86,7 @@
     text-align: center;
     font-style: italic;
     font-weight: 600;
-    font-size: clamp(2rem, 5.5vw, 3.8rem);
+    font-size: clamp(1.7rem, 2.8vw, 2.9rem);
     line-height: 1;
     opacity: 0;
     transform: translateY(22px);
@@ -100,4 +121,24 @@
 @keyframes throb {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
+}
+
+// Mobile: vertical feed, full-screen cards
+@media (max-width: 768px) {
+  #feed {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .card {
+    width: 100%;
+    min-height: 100dvh;
+    height: auto;
+    padding: 9vh 20px 7vh;
+    contain-intrinsic-size: 100vw 100vh;
+
+    .frame { width: min(52vh, 82vw); }
+    .name { font-size: clamp(2rem, 5.5vw, 3.8rem); }
+  }
 }

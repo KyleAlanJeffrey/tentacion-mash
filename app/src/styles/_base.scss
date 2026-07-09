@@ -9,6 +9,10 @@ body {
   font-family: $serif;
   overflow: hidden;
 
+  // a memorial you look at, not a doc you highlight
+  -webkit-user-select: none;
+  user-select: none;
+
   // film grain over everything
   &::before {
     content: "";
@@ -19,6 +23,13 @@ body {
     opacity: 0.5;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   }
+}
+
+// images are never draggable or selectable
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
 }
 
 header {

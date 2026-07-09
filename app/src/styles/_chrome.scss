@@ -76,6 +76,13 @@
   &.show { transform: translate(-50%, 0); }
 }
 
+// orientation-specific labels
+.h-mobile { display: none; }
+@media (max-width: 768px) {
+  .h-desktop { display: none; }
+  .h-mobile { display: inline; }
+}
+
 @media (max-width: 600px) {
   #rail { top: auto; bottom: 9vh; right: 16px; }
   #railBar { height: 14vh; }
