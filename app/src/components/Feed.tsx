@@ -64,9 +64,14 @@ const Feed = forwardRef<HTMLElement, FeedProps>(function Feed(
       raf = 0;
       const els = sections();
       if (!els.length) return;
+      const range = isMobile
+        ? feed.scrollHeight - feed.clientHeight
+        : feed.scrollWidth - feed.clientWidth;
+      const scrolled = isMobile ? feed.scrollTop : feed.scrollLeft;
+      const progress = range > 0 ? Math.min(1, Math.max(0, scrolled / range)) : 0;
       const el = els[nearestIndex()];
       if (el.id === "watch") {
-        onRail({ year: "SOON", pos: "the future", fill: 0, top: true });
+        onRail({ year: "SOON", pos: "the future", fill: 0, top: true, progress });
       } else {
         const i = Number(el.dataset.i);
         onRail({
@@ -74,6 +79,7 @@ const Feed = forwardRef<HTMLElement, FeedProps>(function Feed(
           pos: `${i + 1} / ${edits.length}`,
           fill: edits.length < 2 ? 100 : (i / (edits.length - 1)) * 100,
           top: i === 0,
+          progress,
         });
       }
     };

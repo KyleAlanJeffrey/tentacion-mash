@@ -1,68 +1,118 @@
 @use "vars" as *;
 
-// side rail
-#rail {
+// interactive timeline scrubber — horizontal along the bottom on desktop
+#timeline {
   position: fixed;
-  right: clamp(14px, 3vw, 44px);
-  top: 50%;
-  transform: translateY(-50%);
   z-index: 40;
-  text-align: right;
-  pointer-events: none;
-}
-
-#railYear {
-  font-family: $blackletter;
-  font-size: clamp(1.6rem, 4vw, 2.8rem);
-  color: $blood;
-  transition: opacity 0.3s;
-}
-
-#railPos {
-  margin-top: 0.7em;
-  @include mono-label(0.62rem, 0.3em);
-  color: $bone-dim;
-}
-
-#railBar {
-  margin: 1em 0 0 auto;
-  width: 1px;
-  height: 26vh;
-  background: $hair;
-  position: relative;
-}
-
-#railFill {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 0%;
-  background: $blood;
-  transition: height 0.25s;
-}
-
-// scroll hint
-#hint {
-  position: fixed;
-  bottom: 3.5vh; left: 50%;
+  left: 50%;
+  bottom: clamp(16px, 3.5vh, 40px);
   transform: translateX(-50%);
-  z-index: 40;
-  @include mono-label(0.6rem, 0.4em);
+  width: min(720px, 90vw);
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 20px);
+}
+
+.tl-skip {
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid $hair;
   color: $bone-dim;
-  pointer-events: none;
-  animation: sink 2.2s ease-in-out infinite;
+  cursor: pointer;
+  font-family: $mono;
+  font-size: 0.9rem;
+  line-height: 1;
+  width: 2.2em;
+  height: 2.2em;
+  display: grid;
+  place-items: center;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+
+  &:hover {
+    color: $bone;
+    border-color: $blood;
+    background: rgba($blood, 0.12);
+  }
+  &:active { transform: scale(0.92); }
 }
 
-@keyframes sink {
-  0%, 100% { transform: translate(-50%, 0); opacity: 0.9; }
-  50% { transform: translate(-50%, 7px); opacity: 0.35; }
+.tl-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-// new-death toast
+.tl-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.tl-year {
+  font-family: $blackletter;
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  line-height: 1;
+  color: $blood;
+}
+
+.tl-pos {
+  @include mono-label(0.58rem, 0.28em);
+  color: $bone-dim;
+  white-space: nowrap;
+}
+
+.tl-track {
+  position: relative;
+  height: 22px;                 // generous hit area around a thin line
+  cursor: pointer;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+
+  &::before {                   // the rule the handle rides
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: $hair;
+  }
+}
+
+.tl-fill {
+  position: absolute;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: $blood;
+}
+
+.tl-handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: $blood;
+  box-shadow: 0 0 0 4px rgba($blood, 0.18);
+  transform: translate(-50%, -50%);
+  transition: box-shadow 0.2s, transform 0.1s;
+
+  .tl-track:hover &,
+  .tl-track.drag & {
+    box-shadow: 0 0 0 6px rgba($blood, 0.28);
+  }
+  .tl-track.drag & { transform: translate(-50%, -50%) scale(1.15); }
+}
+
+// new-death toast — parked above the top and fully transparent until shown
 #toast {
   position: fixed;
-  top: 70px; left: 50%;
-  transform: translate(-50%, -200%);
+  top: 20px; left: 50%;
+  transform: translate(-50%, -160%);
+  opacity: 0;
+  pointer-events: none;
   z-index: 50;
   background: $blood;
   color: #fff;
@@ -71,19 +121,63 @@
   @include mono-label(0.68rem, 0.3em);
   font-weight: 500;
   padding: 0.8em 1.6em;
-  transition: transform 0.5s $ease;
+  transition: transform 0.5s $ease, opacity 0.5s $ease;
 
-  &.show { transform: translate(-50%, 0); }
+  &.show {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
-// orientation-specific labels
-.h-mobile { display: none; }
-@media (max-width: 768px) {
-  .h-desktop { display: none; }
-  .h-mobile { display: inline; }
-}
+// Mobile: the scrubber stands vertically up the right edge, tracking the
+// vertical feed. The .v class is applied by the component (in sync with the
+// same breakpoint that flips the feed's axis).
+#timeline.v {
+  left: auto;
+  right: clamp(10px, 3vw, 18px);
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  width: auto;
+  flex-direction: column;
+  gap: 12px;
 
-@media (max-width: 600px) {
-  #rail { top: auto; bottom: 9vh; right: 16px; }
-  #railBar { height: 14vh; }
+  .tl-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    height: 42vh;
+  }
+
+  .tl-meta {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+  }
+
+  .tl-year { font-size: clamp(1.2rem, 6vw, 1.7rem); }
+
+  .tl-track {
+    flex: 1 1 auto;
+    width: 22px;
+    height: auto;
+
+    &::before {
+      left: 50%; right: auto;
+      top: 0; bottom: 0;
+      width: 2px; height: auto;
+      transform: translateX(-50%);
+    }
+  }
+
+  .tl-fill {
+    left: 50%; top: 0;
+    width: 2px;
+    transform: translateX(-50%);
+  }
+
+  .tl-handle { left: 50%; }
 }

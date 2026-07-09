@@ -17,10 +17,11 @@ export interface Ghost {
   img: string;
 }
 
-/** What the side rail displays for the current section. */
+/** What the timeline scrubber displays for the current section. */
 export interface RailInfo {
   year: string;
   pos: string;
   fill: number;                 // 0..100, progress into the past
   top: boolean;                 // at the newest death (or above)
+  progress: number;             // 0..1, overall scroll position (drives the slider handle)
 }

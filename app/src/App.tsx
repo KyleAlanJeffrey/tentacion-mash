@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Feed from "./components/Feed";
-import Rail from "./components/Rail";
+import Timeline from "./components/Timeline";
 import Toast from "./components/Toast";
 import { diedDate, fetchEdits, fetchGhosts } from "./lib";
 import type { Edit, Ghost, RailInfo } from "./types";
@@ -58,7 +58,7 @@ export default function App() {
   return (
     <>
       <header><h1>THE <span className="half">OTHER</span> HALF</h1></header>
-      <Rail info={rail} count={edits?.length ?? 0} />
+      <Timeline info={rail} count={edits?.length ?? 0} feedRef={feedRef} />
       <Toast show={toast} onClick={surfacePending} />
       {error && !edits ? (
         <div className="note">

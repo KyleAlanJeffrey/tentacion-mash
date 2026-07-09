@@ -133,12 +133,12 @@
 
   .card {
     width: 100%;
-    min-height: 100dvh;
+    min-height: 0;              // let pictures sit close together, not one per screen
     height: auto;
-    padding: 9vh 20px 7vh;
-    contain-intrinsic-size: 100vw 100vh;
+    padding: 3.5vh 20px;
+    contain-intrinsic-size: 100vw 560px;
 
-    .frame { width: min(52vh, 82vw); }
-    .name { font-size: clamp(2rem, 5.5vw, 3.8rem); }
+    .frame { width: min(82vw, 460px); }
+    .name { font-size: clamp(1.9rem, 5.5vw, 3.4rem); }
   }
 }
