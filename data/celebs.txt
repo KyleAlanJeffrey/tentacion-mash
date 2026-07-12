@@ -1156,3 +1156,538 @@ Ariel Sharon
 Yukio Mishima
 Theocritus
 Emperor Meiji
+
+# --- U.S. Congress, 119th (Ballotpedia; Ballotpedia display names) ---
+Katie Britt
+Tommy Tuberville
+Lisa Murkowski
+Daniel S. Sullivan
+Ruben Gallego
+Mark Kelly
+John Boozman
+Tom Cotton
+Alex Padilla
+Adam Schiff
+Michael Bennet
+John Hickenlooper
+Richard Blumenthal
+Christopher S. Murphy
+Lisa Blunt Rochester
+Chris Coons
+Ashley B. Moody
+Rick Scott
+Jon Ossoff
+Raphael Warnock
+Mazie K. Hirono
+Brian E. Schatz
+Mike Crapo
+Jim Risch
+Tammy Duckworth
+Dick Durbin
+Jim Banks
+Todd C. Young
+Joni Ernst
+Chuck Grassley
+Roger Marshall
+Jerry Moran
+Rand Paul
+Bill Cassidy
+John Neely Kennedy
+Susan Collins
+Angus King
+Angela Alsobrooks
+Chris Van Hollen
+Edward J. Markey
+Elizabeth Warren
+Gary Peters
+Elissa Slotkin
+Amy Klobuchar
+Tina Smith
+Cindy Hyde-Smith
+Roger Wicker
+Josh Hawley
+Eric Schmitt
+Steve Daines
+Tim Sheehy
+Deb Fischer
+Pete Ricketts
+Catherine Cortez Masto
+Jacky Rosen
+Maggie Hassan
+Jeanne Shaheen
+Cory Booker
+Andrew Kim
+Martin Heinrich
+Ben Ray Luján
+Kirsten Gillibrand
+Chuck Schumer
+Ted Budd
+Thom Tillis
+Kevin Cramer
+John Hoeven
+Jon Husted
+Bernie Moreno
+Alan Armstrong
+James Lankford
+Jeff Merkley
+Ron Wyden
+John Fetterman
+David McCormick
+Jack Reed
+Sheldon Whitehouse
+Tim Scott
+Mike Rounds
+John Thune
+Marsha Blackburn
+Bill Hagerty
+John Cornyn
+Ted Cruz
+John Curtis
+Mike Lee
+Peter Welch
+Tim Kaine
+Mark Warner
+Maria Cantwell
+Patty Murray
+Shelley Moore Capito
+Jim Justice
+Tammy Baldwin
+Ronald Harold Johnson
+John Barrasso
+Cynthia Lummis
+Barry Moore
+Shomari Figures
+Mike Rogers
+Robert Aderholt
+Dale Strong
+Gary Palmer
+Terri Sewell
+Nicholas Begich
+Aumua Amata Radewagen
+David Schweikert
+Eli Crane
+Yassamin Ansari
+Greg Stanton
+Andy Biggs
+Juan Ciscomani
+Adelita Grijalva
+Abraham Hamadeh
+Paul Gosar
+Rick Crawford
+French Hill
+Steve Womack
+Bruce Westerman
+James Gallagher
+Jared Huffman
+Kevin Kiley
+Mike Thompson
+Tom McClintock
+Ami Bera
+Doris Matsui
+John Garamendi
+Josh Harder
+Mark DeSaulnier
+Lateefah Simon
+Adam Gray
+Kevin Mullin
+Sam Liccardo
+Ro Khanna
+Zoe Lofgren
+Jimmy Panetta
+Vince Fong
+Jim Costa
+David G. Valadao
+Jay Obernolte
+Salud Carbajal
+Raul Ruiz
+Julia Brownley
+George Whitesides
+Judy Chu
+Luz Maria Rivas
+Laura Friedman
+Gil Cisneros
+Brad Sherman
+Pete Aguilar
+Jimmy Gomez
+Norma Torres
+Ted Lieu
+Sydney Kamlager-Dove
+Linda Sánchez
+Mark Takano
+Young Kim
+Ken Calvert
+Robert Garcia
+Maxine Waters
+Nanette Barragán
+Derek Tran
+Lou Correa
+Dave Min
+Darrell Issa
+Mike Levin
+Scott Peters
+Sara Jacobs
+Juan Vargas
+Diana DeGette
+Joe Neguse
+Jeff Hurd
+Lauren Boebert
+Jeff Crank
+Jason Crow
+Brittany Pettersen
+Gabe Evans
+John Larson
+Joe Courtney
+Rosa L. DeLauro
+Jim Himes
+Jahana Hayes
+Sarah McBride
+Jimmy Patronis
+Neal Dunn
+Kat Cammack
+Aaron Bean
+John Rutherford
+Randy Fine
+Cory Mills
+Mike Haridopolos
+Darren Soto
+Maxwell Alejandro Frost
+Daniel Webster
+Gus M. Bilirakis
+Anna Paulina Luna
+Kathy Castor
+Laurel Lee
+Vern Buchanan
+Greg Steube
+Scott Franklin
+Byron Donalds
+Brian Mast
+Lois Frankel
+Jared Evan Moskowitz
+Frederica S. Wilson
+Debbie Wasserman Schultz
+Mario Diaz-Balart
+Maria Elvira Salazar
+Carlos Gimenez
+Earl Carter
+Sanford Bishop Jr.
+Brian Jack
+Hank Johnson
+Nikema Williams
+Lucy McBath
+Rich McCormick
+Austin Scott
+Andrew Clyde
+Mike Collins
+Barry Loudermilk
+Rick Allen
+Clayton Fuller
+James Moylan
+Ed Case
+Jill Tokuda
+Russ Fulcher
+Michael K. Simpson
+Jonathan Jackson
+Robin Kelly
+Delia Ramirez
+Jesus Garcia
+Mike Quigley
+Sean Casten
+Danny K. Davis
+Raja Krishnamoorthi
+Jan Schakowsky
+Brad Schneider
+Bill Foster
+Mike Bost
+Nikki Budzinski
+Lauren Underwood
+Mary Miller
+Darin LaHood
+Eric Sorensen
+Frank Mrvan
+Rudy Yakym
+Marlin A. Stutzman
+Jim Baird
+Victoria Spartz
+Jefferson Shreve
+André Carson
+Mark Messmer
+Erin Houchin
+Mariannette Miller-Meeks
+Ashley Hinson
+Zach Nunn
+Randy Feenstra
+Tracey Mann
+Derek Schmidt
+Sharice Davids
+Ron Estes
+James Comer Jr.
+Brett Guthrie
+Morgan McGarvey
+Thomas Massie
+Hal Rogers
+Andy Barr
+Steve Scalise
+Troy Carter
+Clay Higgins
+Mike Johnson
+Julia Letlow
+Cleo Fields
+Chellie Pingree
+Jared Golden
+Andrew Harris
+John Olszewski Jr.
+Sarah Elfreth
+Glenn Ivey
+Steny Hoyer
+April McClain Delaney
+Kweisi Mfume
+Jamie Raskin
+Richard Neal
+Jim McGovern
+Lori Trahan
+Jake Auchincloss
+Katherine Clark
+Seth Moulton
+Ayanna Pressley
+Stephen Lynch
+Bill Keating
+Jack Bergman
+John Moolenaar
+Hillary Scholten
+Bill Huizenga
+Tim Walberg
+Debbie Dingell
+Tom Barrett
+Kristen McDonald Rivet
+Lisa McClain
+John James
+Haley Stevens
+Rashida Tlaib
+Shri Thanedar
+Brad Finstad
+Angie Craig
+Kelly Morrison
+Betty McCollum
+Ilhan Omar
+Tom Emmer
+Michelle Fischbach
+Pete Stauber
+Trent Kelly
+Bennie Thompson
+Michael Guest
+Mike Ezell
+Wesley Bell
+Ann Wagner
+Bob Onder
+Mark Alford
+Emanuel Cleaver
+Sam Graves
+Eric Burlison
+Jason Smith
+Ryan K. Zinke
+Troy Downing
+Mike Flood
+Don Bacon
+Adrian Smith
+Dina Titus
+Mark Amodei
+Susie Lee
+Steven Horsford
+Chris Pappas
+Maggie Goodlander
+Donald Norcross
+Jeff Van Drew
+Herbert C. Conaway Jr.
+Chris Smith
+Josh Gottheimer
+Frank Pallone Jr.
+Thomas Kean Jr.
+Robert Menendez Jr.
+Nellie Pou
+LaMonica McIver
+Analilia Mejia
+Bonnie Watson Coleman
+Melanie Ann Stansbury
+Gabriel Vasquez
+Teresa Leger Fernandez
+Nicholas J. LaLota
+Andrew Garbarino
+Tom Suozzi
+Laura Gillen
+Gregory W. Meeks
+Grace Meng
+Nydia Velazquez
+Hakeem Jeffries
+Yvette D. Clarke
+Daniel Goldman
+Nicole Malliotakis
+Jerrold Nadler
+Adriano Espaillat
+Alexandria Ocasio-Cortez
+Ritchie Torres
+George Latimer
+Michael Lawler
+Pat Ryan
+Josh Riley
+Paul Tonko
+Elise Stefanik
+John Mannion
+Nick Langworthy
+Claudia Tenney
+Joseph Morelle
+Timothy M. Kennedy
+Eleanor Holmes Norton
+Donald Davis
+Deborah Ross
+Gregory Murphy
+Valerie Foushee
+Virginia Foxx
+Addison McDowell
+David Rouzer
+Mark Harris
+Richard Hudson
+Pat Harrigan
+Chuck Edwards
+Alma Adams
+Brad Knott
+Timothy K. Moore
+Julie Fedorchak
+Kimberlyn King-Hinds
+Greg Landsman
+David Taylor
+Joyce Beatty
+Jim Jordan
+Bob Latta
+Michael Rulli
+Max Miller
+Warren Davidson
+Marcy Kaptur
+Michael Turner
+Shontel Brown
+Troy Balderson
+Emilia Sykes
+David Joyce
+Mike Carey
+Kevin Hern
+Josh Brecheen
+Frank Lucas
+Tom Cole
+Stephanie Bice
+Suzanne Bonamici
+Cliff Bentz
+Maxine Dexter
+Val Hoyle
+Janelle Bynum
+Andrea Salinas
+Brian Fitzpatrick
+Brendan Boyle
+Dwight Evans
+Madeleine Dean
+Mary Gay Scanlon
+Chrissy Houlahan
+Ryan Mackenzie
+Rob Bresnahan Jr.
+Dan Meuser
+Scott Perry
+Lloyd Smucker
+Summer Lee
+John Joyce
+Guy Reschenthaler
+Glenn Thompson
+Mike Kelly
+Chris Deluzio
+Gabe Amo
+Seth Magaziner
+Nancy Mace
+Joe Wilson
+Sheri Biggs
+William Timmons
+Ralph Norman
+James Clyburn
+Russell Fry
+Dusty Johnson
+Diana Harshbarger
+Tim Burchett
+Charles J. Fleischmann
+Scott DesJarlais
+Andy Ogles
+John Rose
+Matt Van Epps
+David Kustoff
+Steve Cohen
+Nathaniel Moran
+Daniel Crenshaw
+Keith Self
+Pat Fallon
+Lance Gooden
+Jake Ellzey
+Lizzie Pannill Fletcher
+Morgan Luttrell
+Al Green
+Michael McCaul
+August Pfluger
+Craig Goldman
+Ronny L. Jackson
+Randy Weber
+Monica De La Cruz
+Veronica Escobar
+Pete Sessions
+Christian Menefee
+Jodey Arrington
+Joaquin Castro
+Chip Roy
+Troy Nehls
+Beth Van Duyne
+Roger Williams
+Brandon Gill
+Michael Cloud
+Henry Cuellar
+Sylvia Garcia
+Jasmine Crockett
+John Carter
+Julie Johnson
+Marc Veasey
+Vicente Gonzalez Jr.
+Greg Casar
+Brian Babin
+Lloyd Doggett
+Wesley Hunt
+Blake Moore
+Celeste Maloy
+Mike Kennedy
+Burgess Owens
+Becca Balint
+Stacey Plaskett
+Robert J. Wittman
+Jennifer Kiggans
+Robert C. Scott
+Jennifer McClellan
+John McGuire
+Benjamin Lee Cline
+Eugene Vindman
+Donald Sternoff Beyer Jr.
+H. Morgan Griffith
+Suhas Subramanyam
+James Walkinshaw
+Suzan DelBene
+Rick Larsen
+Marie Gluesenkamp Pérez
+Dan Newhouse
+Michael Baumgartner
+Emily Randall
+Pramila Jayapal
+Kim Schrier
+D. Adam Smith
+Marilyn Strickland
+Carol Miller
+Riley Moore
+Bryan Steil
+Mark Pocan
+Derrick Van Orden
+Gwen Moore
+Scott Fitzgerald
+Glenn Grothman
+Tom Tiffany
+Tony Wied
+Harriet Hageman
+Lindsey Graham
